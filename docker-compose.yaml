@@ -1,0 +1,40 @@
+version: '3.1'
+
+services:
+  db:
+    container_name: auth-db
+    image: 'postgres:latest'
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      - POSTGRES_DB=db_auth_serv
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    networks:
+      - my_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SPRING_PROFILES_ACTIVE=dev
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
