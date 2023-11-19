@@ -1,4 +1,4 @@
 package com.auth.authserver2.dataseed;
 
-public class UserSeed {
+public class MemberSeed {
 }
