@@ -10,10 +10,10 @@ import org.springframework.security.core.GrantedAuthority;
 @Setter
 public class RolesSecurity implements GrantedAuthority {
 
-    private RolesEntity rolesEntity;
+    private RoleEntity roleEntity;
 
     @Override
     public String getAuthority() {
-        return rolesEntity.getRoleName();
+        return roleEntity.getRoleName();
     }
 }

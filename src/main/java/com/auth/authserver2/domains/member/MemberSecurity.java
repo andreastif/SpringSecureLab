@@ -1,18 +1,25 @@
 package com.auth.authserver2.domains.member;
 
 import com.auth.authserver2.domains.roles.RolesSecurity;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MemberSecurity implements UserDetails {
 
-    MemberEntity member;
+    private MemberEntity member;
 
     public Long getId() {
         return member.getId();
@@ -31,11 +38,11 @@ public class MemberSecurity implements UserDetails {
         return member.getEmail();
     }
 
-    public LocalDate getCreated() {
+    public Instant getCreated() {
         return member.getCreated();
     }
 
-    public LocalDate getLastUpdated() {
+    public Instant getLastUpdated() {
         return member.getLastUpdated();
     }
 

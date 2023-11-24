@@ -1,7 +1,7 @@
 package com.auth.authserver2.domains.map;
 
 import com.auth.authserver2.domains.member.MemberEntity;
-import com.auth.authserver2.domains.roles.RolesEntity;
+import com.auth.authserver2.domains.roles.RoleEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,7 +17,7 @@ import java.util.Objects;
 public class MemberRoleEntity {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
@@ -27,7 +27,13 @@ public class MemberRoleEntity {
 
     @ManyToOne
     @JoinColumn(name = "role_id")
-    private RolesEntity roles;
+    private RoleEntity roles;
+
+    public MemberRoleEntity(RoleEntity role, MemberEntity member) {
+        this.roles = role;
+        this.member = member;
+    }
+
 
     @Override
     public boolean equals(Object o) {
@@ -46,4 +52,6 @@ public class MemberRoleEntity {
         result = 31 * result + (roles != null ? roles.hashCode() : 0);
         return result;
     }
+
+
 }

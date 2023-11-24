@@ -2,12 +2,14 @@ package com.auth.authserver2.controllers;
 
 import com.auth.authserver2.domains.member.MemberDto;
 import com.auth.authserver2.messages.ResponseMessage;
-import com.auth.authserver2.services.MemberUserDetailsService;
+import com.auth.authserver2.services.MemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/")
@@ -26,41 +28,62 @@ public class MemberController {
 
 
     @Qualifier("memberService")
-    private final MemberUserDetailsService memberService;
-
+    private final MemberService memberService;
 
     @Autowired
-    public MemberController(MemberUserDetailsService memberService) {
+    public MemberController(MemberService memberService) {
         this.memberService = memberService;
     }
 
     @GetMapping("members")
-    public ResponseEntity<MemberDto> getMemberByEmail(@RequestParam String email) {
-        return new ResponseEntity<>(memberService.getMemberByEmail(email), HttpStatus.OK);
+    public ResponseEntity<?> getMemberByEmail(@RequestParam String email) {
+
+        Optional<MemberDto> member = memberService.getMemberByEmail(email);
+
+        if (member.isPresent()) {
+            return new ResponseEntity<>(member.get(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(new ResponseMessage(false, "Member could not be found"), HttpStatus.BAD_REQUEST);
+        }
+
+
     }
 
-    @PostMapping("users") //anyone can register, post just need to come from an approved client with the clientId!
+    @PostMapping("members") //anyone can register, post just need to come from an approved client with the clientId!
     public ResponseEntity<ResponseMessage> registerNewMember(@RequestBody MemberDto newMember) {
-        //todo: add e-mail verification for creating account
 
+        //todo: add e-mail verification for creating account
         var responseMessage = memberService.save(newMember);
-        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+
+        if (responseMessage.isSuccessful()) {
+            return new ResponseEntity<>(responseMessage, HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
+        }
     }
 
-    @DeleteMapping("users")
+    @DeleteMapping("members")
     public ResponseEntity<ResponseMessage> deleteMemberByUsername(@RequestParam String email) {
         //todo: add e-mail verification for deleting account
 
         var responseMessage = memberService.deleteMemberByEmail(email);
-        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+        if (responseMessage.isSuccessful()) {
+            return new ResponseEntity<>(responseMessage, HttpStatus.NO_CONTENT);
+        } else {
+            return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
+        }
     }
 
 
-    @PutMapping("users")
+    @PutMapping("members")
     public ResponseEntity<ResponseMessage> updateMemberCredentials(@RequestBody MemberDto member) {
 
         var responseMessage = memberService.updateMemberCredentials(member);
-        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+        if (responseMessage.isSuccessful()) {
+            return new ResponseEntity<>(responseMessage, HttpStatus.NO_CONTENT);
+        } else {
+            return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
+        }
     }
 
 }

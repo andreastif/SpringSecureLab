@@ -1,7 +1,12 @@
 package com.auth.authserver2.repositories;
 
-import com.auth.authserver2.domains.roles.RolesEntity;
+import com.auth.authserver2.domains.roles.RoleEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface RolesRepository extends JpaRepository<RolesEntity, Long> {
+import java.util.Optional;
+
+public interface RolesRepository extends JpaRepository<RoleEntity, Long> {
+
+    Optional<RoleEntity> findRolesEntityByRoleName(String name);
+
 }

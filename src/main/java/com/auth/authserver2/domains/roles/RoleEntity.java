@@ -15,14 +15,14 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @Table(name = "roles")
-public class RolesEntity {
+public class RoleEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "role_name", nullable = false, unique = true)
+    @Column(name = "role_name", unique = true)
     private String roleName; // This maps to the Role enum's name.
 
     @OneToMany(mappedBy = "roles", fetch = FetchType.EAGER)
@@ -31,4 +31,7 @@ public class RolesEntity {
     private Set<MemberRoleEntity> memberRoles;
 
 
+    public RoleEntity(String stringRole) {
+        this.roleName = stringRole;
+    }
 }

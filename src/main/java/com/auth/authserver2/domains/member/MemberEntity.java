@@ -6,7 +6,8 @@ import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.LocalDate;
+
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -21,7 +22,7 @@ import java.util.UUID;
 public class MemberEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
@@ -35,10 +36,10 @@ public class MemberEntity {
     private String email;
 
     @Column(name = "created")
-    private LocalDate created;
+    private Instant created;
 
     @Column(name = "last_updated")
-    private LocalDate lastUpdated;
+    private Instant lastUpdated;
 
     @Column(name = "password")
     private String password;

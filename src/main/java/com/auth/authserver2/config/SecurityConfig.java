@@ -8,6 +8,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,8 +24,10 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         //https://spring.academy/courses/spring-academy-secure-rest-api-oauth2/lessons/the-big-picture
         http
-                .oauth2ResourceServer(config -> config.jwt(Customizer.withDefaults())) // authentication
-                .authorizeHttpRequests(config -> config.anyRequest().authenticated()); // authorization
+//                .oauth2ResourceServer(config -> config.jwt(Customizer.withDefaults())) // authentication
+                .authorizeHttpRequests(config -> config.anyRequest().authenticated()) // authorization
+                .formLogin(Customizer.withDefaults())
+                .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
@@ -35,12 +38,12 @@ public class SecurityConfig {
     }
 
 
-    @Bean
-    public AuthenticationManager authenticationManager(UserDetailsService uds) {
-        DaoAuthenticationProvider daoProvider = new DaoAuthenticationProvider();
-        daoProvider.setUserDetailsService(uds);
-        return new ProviderManager(daoProvider);
-    }
+//    @Bean
+//    public AuthenticationManager authenticationManager(UserDetailsService uds) {
+//        DaoAuthenticationProvider daoProvider = new DaoAuthenticationProvider();
+//        daoProvider.setUserDetailsService(uds);
+//        return new ProviderManager(daoProvider);
+//    }
 
 
 }

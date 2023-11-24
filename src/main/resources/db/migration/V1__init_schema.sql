@@ -1,10 +1,10 @@
 CREATE TABLE members (
                          id BIGSERIAL NOT NULL,
                          uuid UUID UNIQUE,
-                         username VARCHAR(255),
-                         email VARCHAR(255) NOT NULL UNIQUE,
-                         created TIMESTAMP,
-                         last_updated TIMESTAMP,
+                         username VARCHAR(255) UNIQUE,
+                         email VARCHAR(255) UNIQUE,
+                         created TIMESTAMP WITH TIME ZONE,
+                         last_updated TIMESTAMP WITH TIME ZONE,
                          password VARCHAR(255),
                          firstname VARCHAR(255),
                          lastname VARCHAR(255),
@@ -19,7 +19,7 @@ CREATE TABLE members (
 
 CREATE TABLE roles (
                        id BIGSERIAL NOT NULL,
-                       role_name VARCHAR(255) NOT NULL UNIQUE,
+                       role_name VARCHAR(255) UNIQUE,
                        PRIMARY KEY (id)
 );
 
