@@ -4,4 +4,8 @@ import com.auth.authserver2.domains.map.MemberRoleEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MemberRoleMapRepository extends JpaRepository<MemberRoleEntity, Long> {
+
+    void deleteMemberRoleEntitiesByMemberId(Long id);
+
+    void deleteAllByMemberId(Long id);
 }

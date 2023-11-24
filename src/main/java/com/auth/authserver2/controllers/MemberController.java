@@ -13,6 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/")
+@CrossOrigin(origins = "http://localhost:5173")
 //@EnableMethodSecurity
 public class MemberController {
 
@@ -64,11 +65,11 @@ public class MemberController {
 
     @DeleteMapping("members")
     public ResponseEntity<ResponseMessage> deleteMemberByUsername(@RequestParam String email) {
-        //todo: add e-mail verification for deleting account
 
+        //todo: add e-mail verification for deleting account
         var responseMessage = memberService.deleteMemberByEmail(email);
         if (responseMessage.isSuccessful()) {
-            return new ResponseEntity<>(responseMessage, HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>(responseMessage, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
         }
@@ -80,7 +81,7 @@ public class MemberController {
 
         var responseMessage = memberService.updateMemberCredentials(member);
         if (responseMessage.isSuccessful()) {
-            return new ResponseEntity<>(responseMessage, HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>(responseMessage, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
         }

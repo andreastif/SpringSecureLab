@@ -1,6 +1,7 @@
 package com.auth.authserver2.domains.member;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
@@ -45,6 +46,7 @@ public class MemberEntity {
     private String password;
 
     @Column(name = "firstname")
+    @JsonProperty(value = "password", access = JsonProperty.Access.WRITE_ONLY)
     private String firstname;
 
     @Column(name = "lastname")

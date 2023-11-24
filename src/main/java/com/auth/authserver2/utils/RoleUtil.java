@@ -2,7 +2,6 @@ package com.auth.authserver2.utils;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
 import com.auth.authserver2.domains.roles.Role;
-import com.auth.authserver2.domains.roles.RoleEntity;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
