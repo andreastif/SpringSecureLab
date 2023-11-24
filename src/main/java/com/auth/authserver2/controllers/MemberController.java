@@ -2,7 +2,9 @@ package com.auth.authserver2.controllers;
 
 import com.auth.authserver2.domains.member.MemberDto;
 import com.auth.authserver2.messages.ResponseMessage;
+import com.auth.authserver2.services.MemberUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,24 +24,26 @@ public class MemberController {
 
     //Todo: use pagination if getting all users for a certain client
 
-    private final MemberUserDetailService memberUserDetailService;
+
+    @Qualifier("memberService")
+    private final MemberUserDetailsService memberService;
+
 
     @Autowired
-    public MemberController(MemberUserDetailService memberUserDetailService) {
-        this.MemberUserDetailService = memberUserDetailService;
+    public MemberController(MemberUserDetailsService memberService) {
+        this.memberService = memberService;
     }
-
 
     @GetMapping("members")
     public ResponseEntity<MemberDto> getMemberByEmail(@RequestParam String email) {
-        return new ResponseEntity<>(memberUserDetailService.getMemberByEmail(email), HttpStatus.OK);
+        return new ResponseEntity<>(memberService.getMemberByEmail(email), HttpStatus.OK);
     }
 
     @PostMapping("users") //anyone can register, post just need to come from an approved client with the clientId!
     public ResponseEntity<ResponseMessage> registerNewMember(@RequestBody MemberDto newMember) {
         //todo: add e-mail verification for creating account
 
-        var responseMessage = memberUserDetailService.save(newMember);
+        var responseMessage = memberService.save(newMember);
         return new ResponseEntity<>(responseMessage, HttpStatus.OK);
     }
 
@@ -47,14 +51,16 @@ public class MemberController {
     public ResponseEntity<ResponseMessage> deleteMemberByUsername(@RequestParam String email) {
         //todo: add e-mail verification for deleting account
 
-        var responseMessage = memberUserDetailService.deleteMemberByEmail(email);
+        var responseMessage = memberService.deleteMemberByEmail(email);
         return new ResponseEntity<>(responseMessage, HttpStatus.OK);
     }
 
 
     @PutMapping("users")
-    public ResponseEntity<ResponseMessage> updateMemberInformation(@RequestBody MemberDto newMember) {
-        return null;
+    public ResponseEntity<ResponseMessage> updateMemberCredentials(@RequestBody MemberDto member) {
+
+        var responseMessage = memberService.updateMemberCredentials(member);
+        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
     }
 
 }

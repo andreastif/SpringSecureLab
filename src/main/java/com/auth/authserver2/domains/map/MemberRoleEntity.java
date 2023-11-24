@@ -1,12 +1,9 @@
-package com.auth.authserver2.domains;
+package com.auth.authserver2.domains.map;
 
 import com.auth.authserver2.domains.member.MemberEntity;
 import com.auth.authserver2.domains.roles.RolesEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Objects;
 
@@ -15,6 +12,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(name = "member_role_map")
 public class MemberRoleEntity {
 

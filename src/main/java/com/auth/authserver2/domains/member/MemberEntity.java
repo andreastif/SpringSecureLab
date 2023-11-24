@@ -1,6 +1,6 @@
 package com.auth.authserver2.domains.member;
 
-import com.auth.authserver2.domains.MemberRoleEntity;
+import com.auth.authserver2.domains.map.MemberRoleEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
@@ -16,6 +16,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table (name = "members")
 public class MemberEntity {
 
@@ -63,7 +64,7 @@ public class MemberEntity {
     @Column(name = "enabled")
     private boolean enabled;
 
-    @OneToMany(mappedBy = "member")
+    @OneToMany(mappedBy = "member", fetch = FetchType.EAGER)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @ToString.Exclude
     private Set<MemberRoleEntity> memberRoles;
