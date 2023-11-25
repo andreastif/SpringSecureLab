@@ -24,8 +24,6 @@ import java.util.Arrays;
 @Configuration
 public class SecurityConfig {
 
-
-
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         //https://spring.academy/courses/spring-academy-secure-rest-api-oauth2/lessons/the-big-picture
@@ -34,7 +32,7 @@ public class SecurityConfig {
 //                .oauth2ResourceServer(config -> config.jwt(Customizer.withDefaults())) // authentication
                 .authorizeHttpRequests(config -> config.anyRequest().authenticated()) // authorization
                 .httpBasic(Customizer.withDefaults())
-                .cors(Customizer.withDefaults())
+                .cors(corsConfig -> corsConfigurationSource())
                 .csrf(AbstractHttpConfigurer::disable);
 
         return http.build();
@@ -46,12 +44,12 @@ public class SecurityConfig {
     }
 
 
-    @Bean
-    public AuthenticationManager authenticationManager(UserDetailsService uds) {
-        DaoAuthenticationProvider daoProvider = new DaoAuthenticationProvider();
-        daoProvider.setUserDetailsService(uds);
-        return new ProviderManager(daoProvider);
-    }
+//    @Bean
+//    public AuthenticationManager authenticationManager(UserDetailsService uds) {
+//        DaoAuthenticationProvider daoProvider = new DaoAuthenticationProvider();
+//        daoProvider.setUserDetailsService(uds);
+//        return new ProviderManager(daoProvider);
+//    }
 
     //if you name this to corsConfigurationSource(), then you can use the Customzier.withDefaults() in the filter above because it will auto inject this bean
     //if you name it something else or have more than one config with different names, you have to inject the wanted bean manually like this:
@@ -63,10 +61,10 @@ public class SecurityConfig {
         //This defines a bean that can be used to inject into different CORS configuration sections
 
         CorsConfiguration configuration = new CorsConfiguration();
-        //the "who" that is being accepted
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-        //the "what" is being accepted
-        configuration.setAllowedMethods(Arrays.asList("GET","POST", "PUT", "DELETE"));
+        //the "who" that is being accepted, p.s, the moz is the RESTer mozilla extension origin
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "moz-extension://ca99f7ae-5a3d-46e7-a87d-6eda4792c909"));
+        //the "what" is being accepted, Options = pre-flight request
+        configuration.setAllowedMethods(Arrays.asList("GET","POST", "PUT", "DELETE", "OPTIONS"));
 
         //This is for sending credentials through cookies. If false, you can use headers for basic or authorization tokens instead
         //if you want a JWT httponly cookie, this must be set to true

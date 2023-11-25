@@ -63,6 +63,9 @@ public class MemberServiceImpl implements MemberService {
         Assert.hasText(newMember.getUsername(), "username cannot be empty");
         Assert.hasText(newMember.getEmail(), "email cannot be empty");
         Assert.hasText(newMember.getPassword(), "password cannot be empty");
+        Assert.hasText(newMember.getFirstname(), "firstname cannot be empty");
+        Assert.hasText(newMember.getLastname(), "lastname cannot be empty");
+        Assert.hasText(newMember.getRegisteredToClientId(), "registeredToClientId cannot be empty");
 
         if (memberRepository.findMemberEntityByUsername(newMember.getUsername().toLowerCase()).isPresent() || memberRepository.findMemberEntityByEmail(newMember.getEmail().toLowerCase()).isPresent()) {
             return new ResponseMessage(false, "Could not save the desired member. Member already exists");
@@ -77,6 +80,7 @@ public class MemberServiceImpl implements MemberService {
         newMember.setAccountNonLocked(true);
         newMember.setCredentialsNonExpired(true);
         newMember.setPassword(passwordEncoder.encode(newMember.getPassword()));
+        log.info("PASSWORD {}", newMember.getPassword());
 
         //todo: ska EJ få admin i denna service från memberController, Endast i adminController kan man ge Admin
         newMember.setMemberRoles(Set.of(ROLE_USER, ROLE_GUEST, ROLE_NONE));

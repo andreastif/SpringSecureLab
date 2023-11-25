@@ -43,10 +43,10 @@ public class MemberEntity {
     private Instant lastUpdated;
 
     @Column(name = "password")
+    @JsonProperty(value = "password", access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(name = "firstname")
-    @JsonProperty(value = "password", access = JsonProperty.Access.WRITE_ONLY)
     private String firstname;
 
     @Column(name = "lastname")

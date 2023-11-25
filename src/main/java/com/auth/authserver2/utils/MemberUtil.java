@@ -21,7 +21,7 @@ public class MemberUtil {
                 .email(memberDto.getEmail().toLowerCase())
                 .created(Instant.now())
                 .lastUpdated(Instant.now())
-                //Password is NOT included for safety reasons
+                .password(memberDto.getPassword())
                 .firstname(memberDto.getFirstname().toLowerCase())
                 .lastname(memberDto.getLastname().toLowerCase())
                 .registeredToClientId(memberDto.getRegisteredToClientId().toLowerCase())
@@ -56,7 +56,8 @@ public class MemberUtil {
                 .email(memberEntity.getEmail())
                 .firstname(memberEntity.getFirstname())
                 .lastname(memberEntity.getLastname())
-                .password(memberEntity.getPassword())
+                //Password NOT included for safety reasons
+//                .password(memberEntity.getPassword())
                 .memberRoles(RoleUtil.toRoleSet(memberEntity.getMemberRoles()))
                 .enabled(memberEntity.isEnabled())
                 .accountNonExpired(memberEntity.isAccountNonExpired())
