@@ -1,6 +1,7 @@
 package com.auth.authserver2.domains.roles;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
@@ -28,6 +29,7 @@ public class RoleEntity {
     @OneToMany(mappedBy = "roles", fetch = FetchType.EAGER)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @ToString.Exclude
+    @JsonManagedReference
     private Set<MemberRoleEntity> memberRoles;
 
 

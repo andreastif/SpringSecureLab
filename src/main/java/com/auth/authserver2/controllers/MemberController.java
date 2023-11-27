@@ -43,7 +43,7 @@ public class MemberController {
         if (member.isPresent()) {
             return new ResponseEntity<>(member.get(), HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(new ResponseMessage(false, "Member could not be found"), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new ResponseMessage(false, "Member could not be found"), HttpStatus.NOT_FOUND);
         }
     }
 
@@ -77,22 +77,23 @@ public class MemberController {
         if (responseMessage.isSuccessful()) {
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(responseMessage, HttpStatus.NOT_FOUND);
         }
     }
 
 
+
+
     @PutMapping("members")
     @PreAuthorize("hasRole('ROLE_USER')")
-    @PostFilter("#member.firstname = @securityConditions.checkMemberId()") //todo: add memberId field to DTO so we can populate it! p.s this works!
     public ResponseEntity<ResponseMessage> updateMemberCredentials(@RequestBody MemberDto member) {
         log.info("Accessing api/v1/members updateMemberCredentiials @PutMapping");
-        log.info("I SHOULD BE REPLACED AND POPULATE THE FUTURE MEMBERID INSIDE THIS CLASS INSTEAD {}", member.getFirstname()); //todo: temporary
+
         var responseMessage = memberService.updateMemberCredentials(member);
         if (responseMessage.isSuccessful()) {
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(responseMessage, HttpStatus.NOT_FOUND);
         }
     }
 

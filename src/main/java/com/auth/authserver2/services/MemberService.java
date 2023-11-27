@@ -20,4 +20,6 @@ public interface MemberService {
 
     String loginUser(String username, String password);
 
+    String extractMemberId(MemberDto member);
+
 }

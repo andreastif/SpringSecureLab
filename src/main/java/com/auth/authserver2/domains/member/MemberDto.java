@@ -12,9 +12,12 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 @Builder
 public class MemberDto {
 
+    @JsonProperty(value = "id", access = JsonProperty.Access.WRITE_ONLY)
+    private String id;
     private String username;
     private String email;
     //think about serialization from the POV of the java object, you deserialize INTO a POJO, FROM JSON

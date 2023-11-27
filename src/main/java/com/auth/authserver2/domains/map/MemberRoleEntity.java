@@ -2,6 +2,7 @@ package com.auth.authserver2.domains.map;
 
 import com.auth.authserver2.domains.member.MemberEntity;
 import com.auth.authserver2.domains.roles.RoleEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,10 +24,12 @@ public class MemberRoleEntity {
 
     @ManyToOne
     @JoinColumn(name = "member_id")
+    @JsonBackReference
     private MemberEntity member;
 
     @ManyToOne
     @JoinColumn(name = "role_id")
+    @JsonBackReference
     private RoleEntity roles;
 
     public MemberRoleEntity(RoleEntity role, MemberEntity member) {

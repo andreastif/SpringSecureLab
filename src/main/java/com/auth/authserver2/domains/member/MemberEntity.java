@@ -1,6 +1,7 @@
 package com.auth.authserver2.domains.member;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
 @Table (name = "members")
 public class MemberEntity {
 
@@ -70,5 +72,6 @@ public class MemberEntity {
     @OneToMany(mappedBy = "member", fetch = FetchType.EAGER)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @ToString.Exclude
+    @JsonManagedReference
     private Set<MemberRoleEntity> memberRoles;
 }

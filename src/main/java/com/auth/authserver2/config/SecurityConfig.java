@@ -129,7 +129,7 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
         //the "who" that is being accepted, p.s, the moz is the RESTer mozilla extension origin
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "moz-extension://ca99f7ae-5a3d-46e7-a87d-6eda4792c909"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "moz-extension://ca99f7ae-5a3d-46e7-a87d-6eda4792c909", "PostmanRuntime/7.35.0"));
         //the "what" is being accepted, Options = pre-flight request
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 

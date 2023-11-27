@@ -9,6 +9,9 @@ import com.auth.authserver2.repositories.RolesRepository;
 import com.auth.authserver2.services.MemberService;
 import com.auth.authserver2.services.TokenService;
 import com.auth.authserver2.utils.MemberUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,11 +19,14 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -57,7 +63,8 @@ public class MemberServiceImpl implements MemberService {
             );
             return tokenService.generateJwt(auth);
         } catch (AuthenticationException exception) {
-            return "failed to authenticate";
+            log.info("Failed to authenticate: {}", exception.getMessage());
+            return "Failed to authenticate ";
         }
     }
 
@@ -141,20 +148,26 @@ public class MemberServiceImpl implements MemberService {
     }
 
 
-    //todo: denna metod behöver få mer funktionalitet och få pathvariable m member id
-    //todo: lägg in update för alla andra variabler
+
     @Override
     @Transactional
-    public ResponseMessage updateMemberCredentials(MemberDto member) { //updaterar endast username atm
+    public ResponseMessage updateMemberCredentials(MemberDto member) {
 
-        var existingMember = memberRepository.findMemberEntityByEmail(member.getEmail().toLowerCase());
+        member.setId(extractMemberId(member));
+
+        var existingMember = memberRepository.findMemberEntityById(Long.valueOf(member.getId()));
 
         if (existingMember.isPresent()) {
-            String oldUsername = existingMember.get().getUsername();
-            if (member.getUsername() != null && memberRepository.findMemberEntityByUsername(member.getUsername()).isEmpty()) {
-                existingMember.get().setUsername(member.getUsername());
-                memberRepository.save(existingMember.get());
-                String msg = String.format("Updated username %s to %s", oldUsername, member.getUsername());
+            if (member.getUsername() != null
+                    && memberRepository.findMemberEntityByUsername(member.getUsername()).isEmpty()
+                    && member.getEmail() != null
+                    && memberRepository.findMemberEntityByEmail(member.getEmail()).isEmpty())  {
+
+                log.info("SENDING THE FOLLOWING DATA TO THE toExistingEntityWithUpdatedCredentials memberDto{}, existingMember{}", member, existingMember.get());
+                var updatedMember = MemberUtil.toExistingEntityWithUpdatedCredentials(member, existingMember.get());
+
+                memberRepository.save(updatedMember);
+                String msg = String.format("Updated member %s to %s", existingMember.get(), updatedMember);
                 return new ResponseMessage(true, msg);
             } else {
                 return new ResponseMessage(false, "Not a valid username");
@@ -163,6 +176,12 @@ public class MemberServiceImpl implements MemberService {
             return new ResponseMessage(false, "API ERROR");
         }
 
+    }
+
+    @Override
+    public String extractMemberId(MemberDto memberDto) {
+        JwtAuthenticationToken auth =  (JwtAuthenticationToken ) SecurityContextHolder.getContext().getAuthentication();
+        return auth.getToken().getClaimAsString("memberId");
     }
 }
 
