@@ -3,29 +3,28 @@ package com.auth.authserver2.controllers;
 import com.auth.authserver2.domains.member.MemberDto;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.services.MemberService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PostFilter;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/")
-@CrossOrigin(origins = "http://localhost:5173")
-//@EnableMethodSecurity
+@EnableMethodSecurity
 public class MemberController {
 
     //todo: Crud + method level security (https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html)
 
     //todo: Register + e-mail verification
-
-    //todo: client can only be registered after User for THIS SERVER (!= Users for OTHER clients) has been registered
-
-    //Todo: this server must has its own client in the frontend for login, logout and register to function.
-
-    //Todo: use pagination if getting all users for a certain client
 
 
     @Qualifier("memberService")
@@ -46,13 +45,11 @@ public class MemberController {
         } else {
             return new ResponseEntity<>(new ResponseMessage(false, "Member could not be found"), HttpStatus.BAD_REQUEST);
         }
-
-
     }
 
-    @PostMapping("members") //anyone can register, post just need to come from an approved client with the clientId!
+    @PostMapping("members")
     public ResponseEntity<ResponseMessage> registerNewMember(@RequestBody MemberDto newMember) {
-
+        log.info("Accessing api/v1/members registerNewMember @PostMapping");
         //todo: add e-mail verification for creating account
         var responseMessage = memberService.save(newMember);
 
@@ -63,8 +60,17 @@ public class MemberController {
         }
     }
 
+    @PostMapping("members/login")
+    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+        log.info("Accessing api/v1/members/login login @PostMapping");
+        return new ResponseEntity<>(memberService.loginUser(username, password), HttpStatus.OK);
+    }
+
+
     @DeleteMapping("members")
+    @PreAuthorize("hasRole('ROLE_ADMIN')") //works!
     public ResponseEntity<ResponseMessage> deleteMemberByUsername(@RequestParam String email) {
+        log.info("Accessing api/v1/members deleteMemberByUsername @DeleteMapping");
 
         //todo: add e-mail verification for deleting account
         var responseMessage = memberService.deleteMemberByEmail(email);
@@ -77,8 +83,11 @@ public class MemberController {
 
 
     @PutMapping("members")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @PostFilter("#member.firstname = @securityConditions.checkMemberId()") //todo: add memberId field to DTO so we can populate it! p.s this works!
     public ResponseEntity<ResponseMessage> updateMemberCredentials(@RequestBody MemberDto member) {
-
+        log.info("Accessing api/v1/members updateMemberCredentiials @PutMapping");
+        log.info("I SHOULD BE REPLACED AND POPULATE THE FUTURE MEMBERID INSIDE THIS CLASS INSTEAD {}", member.getFirstname()); //todo: temporary
         var responseMessage = memberService.updateMemberCredentials(member);
         if (responseMessage.isSuccessful()) {
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
@@ -86,6 +95,7 @@ public class MemberController {
             return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
         }
     }
+
 
 }
 

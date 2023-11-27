@@ -9,13 +9,15 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import java.util.Optional;
 
 
-public interface MemberService extends UserDetailsService {
+public interface MemberService {
     Optional<MemberDto> getMemberByEmail(String email);
-
+    Optional<String> getMemberIdByUsername(String username);
     ResponseMessage save(MemberDto newMember);
 
     ResponseMessage deleteMemberByEmail(String email);
 
     ResponseMessage updateMemberCredentials(MemberDto member);
+
+    String loginUser(String username, String password);
 
 }

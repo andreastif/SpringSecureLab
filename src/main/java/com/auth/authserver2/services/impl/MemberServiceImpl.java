@@ -2,17 +2,20 @@ package com.auth.authserver2.services.impl;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
 import com.auth.authserver2.domains.member.MemberDto;
-import com.auth.authserver2.domains.member.MemberSecurity;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.auth.authserver2.repositories.MemberRoleMapRepository;
 import com.auth.authserver2.repositories.RolesRepository;
 import com.auth.authserver2.services.MemberService;
+import com.auth.authserver2.services.TokenService;
 import com.auth.authserver2.utils.MemberUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,31 +26,39 @@ import java.util.Set;
 
 import static com.auth.authserver2.domains.roles.Role.*;
 
-@Service("memberService")
 @Slf4j
+@Service("memberService")
 public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
     private final MemberRoleMapRepository memberRoleMapRepository;
     private final RolesRepository rolesRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    @Qualifier("tokenService")
+    private final TokenService tokenService;
 
     @Autowired
-    public MemberServiceImpl(MemberRepository memberRepository, MemberRoleMapRepository memberRoleMapRepository, RolesRepository rolesRepository, PasswordEncoder passwordEncoder) {
+    public MemberServiceImpl(MemberRepository memberRepository, MemberRoleMapRepository memberRoleMapRepository, RolesRepository rolesRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokenService) {
         this.memberRepository = memberRepository;
         this.memberRoleMapRepository = memberRoleMapRepository;
         this.rolesRepository = rolesRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.tokenService = tokenService;
     }
 
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Assert.hasText(username, "username cannot be empty");
-
-        return memberRepository
-                .findMemberEntityByUsername(username)
-                .map(MemberSecurity::new)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    //todo: change from string to a response that contains isSuccessful, msg and the token
+    //todo: The architecture used from UnkownKoder is this https://docs.spring.io/spring-security/reference/servlet/authentication/architecture.html
+    public String loginUser(String username, String password) {
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password)
+            );
+            return tokenService.generateJwt(auth);
+        } catch (AuthenticationException exception) {
+            return "failed to authenticate";
+        }
     }
 
     @Override
@@ -55,6 +66,13 @@ public class MemberServiceImpl implements MemberService {
         Assert.hasText(email, "email cannot be empty");
         var member = memberRepository.findMemberEntityByEmail(email);
         return member.map(memberEntity -> Optional.ofNullable(MemberUtil.toDto(memberEntity))).orElse(null);
+    }
+
+    @Override
+    public Optional<String> getMemberIdByUsername(String username) {
+        Assert.hasText(username, "email cannot be empty");
+        var member = memberRepository.findMemberEntityByUsername(username);
+        return member.map(memberEntity -> Optional.ofNullable(String.valueOf(memberEntity.getId()))).orElse(null);
     }
 
     @Override
