@@ -1,6 +1,7 @@
 package com.auth.authserver2.controllers;
 
 import com.auth.authserver2.domains.member.MemberDto;
+import com.auth.authserver2.domains.member.MemberUpdateDto;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.services.MemberService;
 import lombok.extern.slf4j.Slf4j;
@@ -86,7 +87,7 @@ public class MemberController {
 
     @PutMapping("members")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResponseEntity<ResponseMessage> updateMemberCredentials(@RequestBody MemberDto member) {
+    public ResponseEntity<ResponseMessage> updateMemberCredentials(@RequestBody MemberUpdateDto member) {
         log.info("Accessing api/v1/members updateMemberCredentiials @PutMapping");
 
         var responseMessage = memberService.updateMemberCredentials(member);

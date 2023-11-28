@@ -2,6 +2,7 @@ package com.auth.authserver2.services.impl;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
 import com.auth.authserver2.domains.member.MemberDto;
+import com.auth.authserver2.domains.member.MemberUpdateDto;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.auth.authserver2.repositories.MemberRoleMapRepository;
@@ -67,6 +68,8 @@ public class MemberServiceImpl implements MemberService {
             return "Failed to authenticate ";
         }
     }
+
+
 
     @Override
     public Optional<MemberDto> getMemberByEmail(String email) {
@@ -151,35 +154,33 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public ResponseMessage updateMemberCredentials(MemberDto member) {
+    public ResponseMessage updateMemberCredentials(MemberUpdateDto member) {
 
         member.setId(extractMemberId(member));
 
         var existingMember = memberRepository.findMemberEntityById(Long.valueOf(member.getId()));
 
-        if (existingMember.isPresent()) {
-            if (member.getUsername() != null
-                    && memberRepository.findMemberEntityByUsername(member.getUsername()).isEmpty()
-                    && member.getEmail() != null
-                    && memberRepository.findMemberEntityByEmail(member.getEmail()).isEmpty())  {
-
-                log.info("SENDING THE FOLLOWING DATA TO THE toExistingEntityWithUpdatedCredentials memberDto{}, existingMember{}", member, existingMember.get());
+        //todo: fix the validateMember in memberUtil and add to the if clause (explodes right now), also, make it throw custom exception.
+        if (existingMember.isPresent() ) {
                 var updatedMember = MemberUtil.toExistingEntityWithUpdatedCredentials(member, existingMember.get());
-
                 memberRepository.save(updatedMember);
                 String msg = String.format("Updated member %s to %s", existingMember.get(), updatedMember);
                 return new ResponseMessage(true, msg);
             } else {
                 return new ResponseMessage(false, "Not a valid username");
             }
-        } else  {
-            return new ResponseMessage(false, "API ERROR");
-        }
+
 
     }
 
     @Override
-    public String extractMemberId(MemberDto memberDto) {
+    public String extractMemberId(MemberUpdateDto memberDto) {
+        JwtAuthenticationToken auth =  (JwtAuthenticationToken ) SecurityContextHolder.getContext().getAuthentication();
+        return auth.getToken().getClaimAsString("memberId");
+    }
+
+    @Override
+    public String extractMemberId(MemberDto member) {
         JwtAuthenticationToken auth =  (JwtAuthenticationToken ) SecurityContextHolder.getContext().getAuthentication();
         return auth.getToken().getClaimAsString("memberId");
     }

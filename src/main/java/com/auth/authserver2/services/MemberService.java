@@ -3,6 +3,7 @@ package com.auth.authserver2.services;
 import com.auth.authserver2.domains.member.MemberDto;
 
 import com.auth.authserver2.domains.member.MemberEntity;
+import com.auth.authserver2.domains.member.MemberUpdateDto;
 import com.auth.authserver2.messages.ResponseMessage;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
@@ -16,10 +17,11 @@ public interface MemberService {
 
     ResponseMessage deleteMemberByEmail(String email);
 
-    ResponseMessage updateMemberCredentials(MemberDto member);
+    ResponseMessage updateMemberCredentials(MemberUpdateDto member);
 
     String loginUser(String username, String password);
 
     String extractMemberId(MemberDto member);
+    String extractMemberId(MemberUpdateDto member);
 
 }
