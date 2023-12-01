@@ -3,6 +3,7 @@ package com.auth.authserver2.controllers;
 import com.auth.authserver2.utils.RSAKeyProperties;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,6 +14,7 @@ public class JwkSetController {
 
     private final RSAKeyProperties keyProperties;
 
+    @Autowired
     public JwkSetController(RSAKeyProperties keyProperties) {
         this.keyProperties = keyProperties;
     }

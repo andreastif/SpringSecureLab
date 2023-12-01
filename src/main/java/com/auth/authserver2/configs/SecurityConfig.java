@@ -1,4 +1,4 @@
-package com.auth.authserver2.config;
+package com.auth.authserver2.configs;
 
 import com.auth.authserver2.utils.RSAKeyProperties;
 import com.nimbusds.jose.jwk.JWK;

@@ -7,12 +7,10 @@ import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.auth.authserver2.repositories.MemberRoleMapRepository;
 import com.auth.authserver2.repositories.RolesRepository;
+import com.auth.authserver2.services.EmailSenderService;
 import com.auth.authserver2.services.MemberService;
 import com.auth.authserver2.services.TokenService;
 import com.auth.authserver2.utils.MemberUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -45,14 +42,18 @@ public class MemberServiceImpl implements MemberService {
     @Qualifier("tokenService")
     private final TokenService tokenService;
 
+    @Qualifier("emailSenderService")
+    private final EmailSenderService emailSenderService;
+
     @Autowired
-    public MemberServiceImpl(MemberRepository memberRepository, MemberRoleMapRepository memberRoleMapRepository, RolesRepository rolesRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokenService) {
+    public MemberServiceImpl(MemberRepository memberRepository, MemberRoleMapRepository memberRoleMapRepository, RolesRepository rolesRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokenService, EmailSenderService emailSenderService) {
         this.memberRepository = memberRepository;
         this.memberRoleMapRepository = memberRoleMapRepository;
         this.rolesRepository = rolesRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
+        this.emailSenderService = emailSenderService;
     }
 
     //todo: change from string to a response that contains isSuccessful, msg and the token
@@ -70,7 +71,6 @@ public class MemberServiceImpl implements MemberService {
     }
 
 
-
     @Override
     public Optional<MemberDto> getMemberByEmail(String email) {
         Assert.hasText(email, "email cannot be empty");
@@ -84,6 +84,8 @@ public class MemberServiceImpl implements MemberService {
         var member = memberRepository.findMemberEntityByUsername(username);
         return member.map(memberEntity -> Optional.ofNullable(String.valueOf(memberEntity.getId()))).orElse(null);
     }
+
+
 
     @Override
     @Transactional
@@ -124,6 +126,8 @@ public class MemberServiceImpl implements MemberService {
             roleEntity.ifPresent(rolesEntity -> memberRoleMapRepository.save(new MemberRoleEntity(rolesEntity, member)));
         });
 
+        emailSenderService.sendEmailToNewUser(member.getEmail());
+
         return new ResponseMessage(true, "Saved new member");
     }
 
@@ -151,7 +155,6 @@ public class MemberServiceImpl implements MemberService {
     }
 
 
-
     @Override
     @Transactional
     public ResponseMessage updateMemberCredentials(MemberUpdateDto member) {
@@ -160,29 +163,34 @@ public class MemberServiceImpl implements MemberService {
 
         var existingMember = memberRepository.findMemberEntityById(Long.valueOf(member.getId()));
 
-        //todo: fix the validateMember in memberUtil and add to the if clause (explodes right now), also, make it throw custom exception.
-        if (existingMember.isPresent() ) {
+        //todo: fix the validateMember in memberUtil also, make it throw custom exceptions (not the predefined ones in use atm).
+        if (existingMember.isPresent()) {
+            var validation = MemberUtil.validateMemberDto(member);
+            if (validation.isSuccessful()) {
                 var updatedMember = MemberUtil.toExistingEntityWithUpdatedCredentials(member, existingMember.get());
                 memberRepository.save(updatedMember);
                 String msg = String.format("Updated member %s to %s", existingMember.get(), updatedMember);
                 return new ResponseMessage(true, msg);
             } else {
-                return new ResponseMessage(false, "Not a valid username");
+                return new ResponseMessage(false, validation.getMsg());
             }
-
-
+        } else {
+            return new ResponseMessage(false, "Not a valid username");
+        }
     }
 
     @Override
     public String extractMemberId(MemberUpdateDto memberDto) {
-        JwtAuthenticationToken auth =  (JwtAuthenticationToken ) SecurityContextHolder.getContext().getAuthentication();
+        JwtAuthenticationToken auth = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         return auth.getToken().getClaimAsString("memberId");
     }
 
     @Override
     public String extractMemberId(MemberDto member) {
-        JwtAuthenticationToken auth =  (JwtAuthenticationToken ) SecurityContextHolder.getContext().getAuthentication();
+        JwtAuthenticationToken auth = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         return auth.getToken().getClaimAsString("memberId");
     }
+
+
 }
 

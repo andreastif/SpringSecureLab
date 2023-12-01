@@ -41,9 +41,6 @@ public class TokenServiceImpl implements TokenService {
 
         String memberId = getMemberIdByUsername(auth.getName()).orElseThrow( () -> new RuntimeException("MemberId not found, check logs"));
 
-
-
-
         //todo : query DB and get more claims to add, getName() is = username from userdetails
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .id(UUID.randomUUID().toString()) //jti or id
@@ -59,6 +56,7 @@ public class TokenServiceImpl implements TokenService {
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
+    //unfortunately, we must define this here, otherwise we get circular references between tokenServ, memberServ and memberContrl.
     public Optional<String> getMemberIdByUsername(String username) {
         Assert.hasText(username, "email cannot be empty");
         var member = memberRepository.findMemberEntityByUsername(username);

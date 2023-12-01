@@ -33,7 +33,7 @@ public class MemberUtil {
 
     @Autowired
     public MemberUtil(MemberRepository memberRepository) {
-        this.memberRepository = memberRepository;
+        MemberUtil.memberRepository = memberRepository;
     }
 
     public static MemberEntity toExistingEntityWithUpdatedCredentials(MemberUpdateDto memberDto, MemberEntity memberEntity) {
@@ -80,8 +80,10 @@ public class MemberUtil {
         objectMapper.registerModule(new JavaTimeModule());
         Map<String, Object> dtoMap = objectMapper.convertValue(memberDto, new TypeReference<>(){});
 
+        //todo: create custom exceptions, dont use the ones that are in effect right now.
+        //search to see if the email or username the member wants to update to, already exists
         if (memberRepository.findMemberEntityByEmail(memberDto.getId()).isPresent() || memberRepository.findMemberEntityByUsername(memberDto.getUsername()).isPresent()) {
-            return new ResponseMessage(false, "Member already exists");
+            return new ResponseMessage(false, "Sorry, could not register with the username and/or email. Try something else");
         }
 
         dtoMap.forEach((key, value) -> {
@@ -93,8 +95,8 @@ public class MemberUtil {
                     if (stringValue == null) {
                         throw new NoSuchFieldException("MemberDto values cannot be null");
                     }
-                    if (!stringValue.toLowerCase().matches("^[^\\\\s]{2,44}$")) {
-                        throw new NoSuchFieldException("MemberDto values cannot be less than 2 characters or greater than 44");
+                    if (!stringValue.toLowerCase().matches("^[^\\\\s]{2,45}$")) {
+                        throw new NoSuchFieldException("MemberDto values cannot be less than 2 characters or greater than 45");
                     }
                 }
                 field.setAccessible(false);
