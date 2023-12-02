@@ -77,6 +77,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(config -> config
                         .requestMatchers(HttpMethod.POST, "/api/v1/members").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/members/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/members/confirm").permitAll()
                         .requestMatchers(HttpMethod.GET, "/.well-known/jwks.json").permitAll()
                         .anyRequest().authenticated()
                 ); // authorization

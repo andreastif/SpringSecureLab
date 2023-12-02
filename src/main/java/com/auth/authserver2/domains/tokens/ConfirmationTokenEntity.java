@@ -2,16 +2,14 @@ package com.auth.authserver2.domains.tokens;
 
 import com.auth.authserver2.domains.member.MemberEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 
 @Entity
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "confirmation_tokens")

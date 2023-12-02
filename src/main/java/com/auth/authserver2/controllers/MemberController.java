@@ -67,6 +67,17 @@ public class MemberController {
         return new ResponseEntity<>(memberService.loginUser(username, password), HttpStatus.OK);
     }
 
+    @GetMapping("members/confirm")
+    public ResponseEntity<?> confirmAccount(@RequestParam String token) {
+        log.info("Accessing api/v1/members/confirmation @Getmapping");
+        var response = memberService.confirmMember(token);
+        if (response.isSuccessful()) {
+            return new ResponseEntity<>(response.getMsg(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(response.getMsg(), HttpStatus.NOT_FOUND);
+        }
+    }
+
 
     @DeleteMapping("members")
     @PreAuthorize("hasRole('ROLE_ADMIN')") //works!

@@ -3,7 +3,11 @@ package com.auth.authserver2.services.impl;
 import com.auth.authserver2.domains.map.MemberRoleEntity;
 import com.auth.authserver2.domains.member.MemberDto;
 import com.auth.authserver2.domains.member.MemberUpdateDto;
+import com.auth.authserver2.exceptions.ConfirmationTokenDoesNotExistException;
+import com.auth.authserver2.exceptions.MemberDoesNotExistException;
+import com.auth.authserver2.exceptions.UnexpectedConfirmationTokenUpdateException;
 import com.auth.authserver2.messages.ResponseMessage;
+import com.auth.authserver2.repositories.ConfirmationTokenRepository;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.auth.authserver2.repositories.MemberRoleMapRepository;
 import com.auth.authserver2.repositories.RolesRepository;
@@ -25,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
@@ -41,7 +46,6 @@ public class MemberServiceImpl implements MemberService {
     private final AuthenticationManager authenticationManager;
     @Qualifier("tokenService")
     private final TokenService tokenService;
-
     @Qualifier("emailSenderService")
     private final EmailSenderService emailSenderService;
 
@@ -66,10 +70,9 @@ public class MemberServiceImpl implements MemberService {
             return tokenService.generateJwt(auth);
         } catch (AuthenticationException exception) {
             log.info("Failed to authenticate: {}", exception.getMessage());
-            return "Failed to authenticate ";
+            return "Failed to authenticate: " + exception.getMessage();
         }
     }
-
 
     @Override
     public Optional<MemberDto> getMemberByEmail(String email) {
@@ -77,14 +80,6 @@ public class MemberServiceImpl implements MemberService {
         var member = memberRepository.findMemberEntityByEmail(email);
         return member.map(memberEntity -> Optional.ofNullable(MemberUtil.toDto(memberEntity))).orElse(null);
     }
-
-    @Override
-    public Optional<String> getMemberIdByUsername(String username) {
-        Assert.hasText(username, "email cannot be empty");
-        var member = memberRepository.findMemberEntityByUsername(username);
-        return member.map(memberEntity -> Optional.ofNullable(String.valueOf(memberEntity.getId()))).orElse(null);
-    }
-
 
 
     @Override
@@ -105,32 +100,31 @@ public class MemberServiceImpl implements MemberService {
         //you first save the two separate entities, in our case roles and members
         //then you save their IDs to the mapping table to simulate the relationship.
         //This is probably over-engineered, a simple ManyToMany would suffice.
-        newMember.setEnabled(true);
+        newMember.setEnabled(false);
         newMember.setAccountNonExpired(true);
         newMember.setAccountNonLocked(true);
         newMember.setCredentialsNonExpired(true);
         newMember.setPassword(passwordEncoder.encode(newMember.getPassword()));
-        log.info("PASSWORD {}", newMember.getPassword());
-
-        //todo: ska EJ få admin i denna service från memberController, Endast i adminController kan man ge Admin
         newMember.setMemberRoles(Set.of(ROLE_USER, ROLE_GUEST, ROLE_NONE));
 
         //1. Member
         var memberEntity = MemberUtil.toNewEntity(newMember);
-        var member = memberRepository.save(memberEntity);
+        var savedMember = memberRepository.save(memberEntity);
 
         //2. Roles
         //for each role that the used had, iterate over and save with the member (this creates the mapping in the map table).
         newMember.getMemberRoles().forEach(role -> {
             var roleEntity = rolesRepository.findRolesEntityByRoleName(role.getRole());
-            roleEntity.ifPresent(rolesEntity -> memberRoleMapRepository.save(new MemberRoleEntity(rolesEntity, member)));
+            roleEntity.ifPresent(rolesEntity -> memberRoleMapRepository.save(new MemberRoleEntity(rolesEntity, savedMember)));
         });
 
-        emailSenderService.sendEmailToNewUser(member.getEmail());
+        //create token and send for email validation
+        var confirmationToken = tokenService.saveConfirmationToken(tokenService.createConfirmationTokenEntity(savedMember));
+
+        emailSenderService.sendEmailToNewUser(savedMember.getEmail(), confirmationToken.getToken());
 
         return new ResponseMessage(true, "Saved new member");
     }
-
 
     @Override
     @Transactional
@@ -154,12 +148,11 @@ public class MemberServiceImpl implements MemberService {
         }
     }
 
-
     @Override
     @Transactional
     public ResponseMessage updateMemberCredentials(MemberUpdateDto member) {
 
-        member.setId(extractMemberId(member));
+        member.setId(extractMemberId());
 
         var existingMember = memberRepository.findMemberEntityById(Long.valueOf(member.getId()));
 
@@ -180,13 +173,35 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public String extractMemberId(MemberUpdateDto memberDto) {
-        JwtAuthenticationToken auth = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
-        return auth.getToken().getClaimAsString("memberId");
+    public ResponseMessage confirmMember(String token) {
+        var confirmationToken = tokenService.getToken(token);
+        if (confirmationToken.isPresent()) {
+            if (confirmationToken.get().getExpiresAt().isBefore(Instant.now())) { //if token is expired (guard-block)
+                var foundMember = memberRepository.findMemberEntityById(
+                        tokenService.findMemberEntityByToken(token).getId());
+                if (foundMember.isPresent()) { //if member exists
+                    var newConfirmationToken = tokenService.saveConfirmationToken(tokenService.createConfirmationTokenEntity(foundMember.get()));
+                        emailSenderService.sendEmailToNewUser(memberRepository.findMemberEntityById(newConfirmationToken.getMemberEntity().getId()).get().getEmail(), newConfirmationToken.getToken());
+                        return new ResponseMessage(false, "Old confirmation token had expired. Sent out a new one to the specified email " + newConfirmationToken.getMemberEntity().getEmail());
+                } else {
+                    throw new MemberDoesNotExistException("Member does not exist"); //this should only happen if someone randomly sends in a shitty string
+                }
+            }
+            var updatedToken = tokenService.updateMemberConfirmationTokenWhenConfirmingAccount(token); //if token is still valid
+            if (updatedToken.getConfirmedAt().minusSeconds(30).isBefore(Instant.now())) { //Only way to check if the token has actually been updated at runtime, in DB
+                var updatedRows = memberRepository.updateMemberEnabledById(updatedToken.getMemberEntity().getId());
+                log.info("Accessing memberRepository.updateMemberEnabledById(), #{} updated rows", updatedRows);
+                return new ResponseMessage(true, "Account confirmed");
+            } else {
+                throw new UnexpectedConfirmationTokenUpdateException("Error in updating token, update took more than 30 seconds to carry out.");
+            }
+        } else {
+            throw new ConfirmationTokenDoesNotExistException("Could not find the specified token " + token);
+        }
     }
 
     @Override
-    public String extractMemberId(MemberDto member) {
+    public String extractMemberId() {
         JwtAuthenticationToken auth = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         return auth.getToken().getClaimAsString("memberId");
     }
