@@ -25,9 +25,6 @@ public class MemberController {
 
     //todo: Crud + method level security (https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html)
 
-    //todo: Register + e-mail verification
-
-
     @Qualifier("memberService")
     private final MemberService memberService;
 
@@ -51,7 +48,6 @@ public class MemberController {
     @PostMapping("members")
     public ResponseEntity<ResponseMessage> registerNewMember(@RequestBody MemberDto newMember) {
         log.info("Accessing api/v1/members registerNewMember @PostMapping");
-        //todo: add e-mail verification for creating account
         var responseMessage = memberService.save(newMember);
 
         if (responseMessage.isSuccessful()) {
@@ -83,8 +79,6 @@ public class MemberController {
     @PreAuthorize("hasRole('ROLE_ADMIN')") //works!
     public ResponseEntity<ResponseMessage> deleteMemberByUsername(@RequestParam String email) {
         log.info("Accessing api/v1/members deleteMemberByUsername @DeleteMapping");
-
-        //todo: add e-mail verification for deleting account
         var responseMessage = memberService.deleteMemberByEmail(email);
         if (responseMessage.isSuccessful()) {
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
@@ -100,7 +94,6 @@ public class MemberController {
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<ResponseMessage> updateMemberCredentials(@RequestBody MemberUpdateDto member) {
         log.info("Accessing api/v1/members updateMemberCredentiials @PutMapping");
-
         var responseMessage = memberService.updateMemberCredentials(member);
         if (responseMessage.isSuccessful()) {
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);

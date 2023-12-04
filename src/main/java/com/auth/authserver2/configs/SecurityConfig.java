@@ -39,8 +39,9 @@ public class SecurityConfig {
 
     //todo: implement key rotation? (watch josh longs video) (nice to have)
     //todo: HttpOnly Cookie + Csrf
+    //todo: properties -> issuer + aud check
     //todo: Hookup the current Frontend application
-    //todo: email verification
+
 
     private final RSAKeyProperties keyProperties;
 

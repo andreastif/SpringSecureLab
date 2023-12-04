@@ -81,6 +81,7 @@ public class MemberUtil {
         Map<String, Object> dtoMap = objectMapper.convertValue(memberDto, new TypeReference<>(){});
 
         //todo: create custom exceptions, dont use the ones that are in effect right now.
+
         //search to see if the email or username the member wants to update to, already exists
         if (memberRepository.findMemberEntityByEmail(memberDto.getId()).isPresent() || memberRepository.findMemberEntityByUsername(memberDto.getUsername()).isPresent()) {
             return new ResponseMessage(false, "Sorry, could not register with the username and/or email. Try something else");
@@ -93,9 +94,10 @@ public class MemberUtil {
                 if (field.getType().equals(String.class)) {
                     String stringValue = (String) value;
                     if (stringValue == null) {
-                        throw new NoSuchFieldException("MemberDto values cannot be null");
+                        return; //skips validation for null values, which is ok
                     }
-                    if (!stringValue.toLowerCase().matches("^[^\\\\s]{2,45}$")) {
+                    //todo: add custom validation for different fields i.e keys (password, username, email, firstname, lastname), not just this catch-all one
+                    if (!stringValue.toLowerCase().matches("^[^\\s]{2,45}$")) {
                         throw new NoSuchFieldException("MemberDto values cannot be less than 2 characters or greater than 45");
                     }
                 }
