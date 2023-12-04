@@ -4,24 +4,25 @@ package com.auth.authserver2.utils;
 import com.auth.authserver2.domains.member.MemberDto;
 import com.auth.authserver2.domains.member.MemberEntity;
 import com.auth.authserver2.domains.member.MemberUpdateDto;
+import com.auth.authserver2.exceptions.CustomEmailValidationException;
+import com.auth.authserver2.exceptions.CustomFirstNameOrLastNameValidationException;
+import com.auth.authserver2.exceptions.CustomPasswordValidationException;
+import com.auth.authserver2.exceptions.CustomUsernameValidationException;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import jakarta.validation.ValidationException;
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -31,9 +32,12 @@ public class MemberUtil {
 
     private static MemberRepository memberRepository;
 
+    private static PasswordEncoder passwordEncoder;
+
     @Autowired
-    public MemberUtil(MemberRepository memberRepository) {
+    public MemberUtil(MemberRepository memberRepository, PasswordEncoder passwordEncoder) {
         MemberUtil.memberRepository = memberRepository;
+        MemberUtil.passwordEncoder = passwordEncoder;
     }
 
     public static MemberEntity toExistingEntityWithUpdatedCredentials(MemberUpdateDto memberDto, MemberEntity memberEntity) {
@@ -56,7 +60,12 @@ public class MemberUtil {
                     field.setAccessible(true);
 
                     if (field.getType().equals(String.class) && value instanceof String) {
-                        field.set(memberEntity, ((String) value).toLowerCase());
+                        if (key.equals("password")) {
+                            field.set(memberEntity, passwordEncoder.encode(((String) value)));
+                        } else {
+                            field.set(memberEntity, ((String) value).toLowerCase());
+                        }
+
                     } else if ((field.getType().equals(boolean.class) || field.getType().equals(Boolean.class))
                             && value instanceof Boolean) {
                         field.setBoolean(memberEntity, (Boolean) value);
@@ -78,9 +87,9 @@ public class MemberUtil {
     public static ResponseMessage validateMemberDto(MemberUpdateDto memberDto) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-        Map<String, Object> dtoMap = objectMapper.convertValue(memberDto, new TypeReference<>(){});
 
-        //todo: create custom exceptions, dont use the ones that are in effect right now.
+
+        Map<String, Object> dtoMap = objectMapper.convertValue(memberDto, new TypeReference<>(){});
 
         //search to see if the email or username the member wants to update to, already exists
         if (memberRepository.findMemberEntityByEmail(memberDto.getId()).isPresent() || memberRepository.findMemberEntityByUsername(memberDto.getUsername()).isPresent()) {
@@ -96,10 +105,19 @@ public class MemberUtil {
                     if (stringValue == null) {
                         return; //skips validation for null values, which is ok
                     }
-                    //todo: add custom validation for different fields i.e keys (password, username, email, firstname, lastname), not just this catch-all one
-                    if (!stringValue.toLowerCase().matches("^[^\\s]{2,45}$")) {
-                        throw new NoSuchFieldException("MemberDto values cannot be less than 2 characters or greater than 45");
+                    if (key.equals("username") && !stringValue.toLowerCase().matches("^[^\\s]{2,45}$")) { //todo: remove toLowerCase for usernames or not?
+                        throw new CustomUsernameValidationException("Username has to be between 2 and 45 characters");
                     }
+                    if (key.equals("email") && !stringValue.toLowerCase().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                        throw new CustomEmailValidationException("Email has to be atleast 6 characters long and be of valid format i.e user@provider.com");
+                    }
+                    if (key.equals("password") && !stringValue.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")) {
+                        throw new CustomPasswordValidationException("Password has to be at least 8 characters in length, contain one uppercase and lowercase letter, one digit and one special character.");
+                    }
+                    if (key.equals("firstname") || key.equals("lastname") && !stringValue.toLowerCase().matches("^[A-Za-z]{2,}$")) {
+                        throw new CustomFirstNameOrLastNameValidationException("First and lastnames must be at least 2 latin characters with no special characters or digits");
+                    }
+                    //todo: do not care about validating registeredToClientId for now
                 }
                 field.setAccessible(false);
             } catch (NoSuchFieldException e) {

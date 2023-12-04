@@ -168,7 +168,7 @@ public class MemberServiceImpl implements MemberService {
                 return new ResponseMessage(false, validation.getMsg());
             }
         } else {
-            return new ResponseMessage(false, "Not a valid username");
+            return new ResponseMessage(false, "Could not find member");
         }
     }
 

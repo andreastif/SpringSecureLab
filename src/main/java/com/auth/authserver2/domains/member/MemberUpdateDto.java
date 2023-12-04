@@ -18,7 +18,6 @@ public class MemberUpdateDto {
     private String id;
     private String username;
     private String email;
-    @JsonProperty(value = "password", access = JsonProperty.Access.WRITE_ONLY) //deserializes INTO POJO only.
     private String password;
     private String firstname;
     private String lastname;
@@ -28,4 +27,5 @@ public class MemberUpdateDto {
     private Boolean credentialsNonExpired;
     private Boolean enabled;
     private Set<Role> memberRoles;
+
 }

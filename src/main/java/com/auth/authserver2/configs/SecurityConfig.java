@@ -20,10 +20,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -32,6 +31,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 
 @Configuration
@@ -39,7 +39,6 @@ public class SecurityConfig {
 
     //todo: implement key rotation? (watch josh longs video) (nice to have)
     //todo: HttpOnly Cookie + Csrf
-    //todo: properties -> issuer + aud check
     //todo: Hookup the current Frontend application
 
 
@@ -94,9 +93,19 @@ public class SecurityConfig {
 
     //We inject this to the SecurityFilterChain above, this is the new DSL configuration
     //https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-decoder-dsl
+
     @Bean
     public JwtDecoder jwtDecoder() {
-        return NimbusJwtDecoder.withPublicKey(keyProperties.getPublicKey()).build();
+        //adjusting our decoder so that we can check for more claims like issuer and audience.
+        //we would add a claim validator just like the aud one if we have more custom claims
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withPublicKey(keyProperties.getPublicKey()).build();
+        OAuth2TokenValidator<Jwt> defaultValidators = JwtValidators.createDefault();
+        OAuth2TokenValidator<Jwt> issuerValidator = new JwtIssuerValidator("http://localhost:8080"); //the one issuing the token
+        OAuth2TokenValidator<Jwt> audienceValidator = new JwtClaimValidator<List<String>>("aud", aud -> aud.contains("http://localhost:8080")); //whom the token is for
+        OAuth2TokenValidator<Jwt> combinedValidator = new DelegatingOAuth2TokenValidator<>(defaultValidators, issuerValidator, audienceValidator); //adding it all inside the decoder
+        jwtDecoder.setJwtValidator(combinedValidator);
+
+        return jwtDecoder;
     }
 
     //This is for extracting the JWT roles and adding them to the context authorities since spring wont pick it up automatically
