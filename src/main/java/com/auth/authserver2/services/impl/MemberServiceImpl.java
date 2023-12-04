@@ -7,7 +7,6 @@ import com.auth.authserver2.exceptions.ConfirmationTokenDoesNotExistException;
 import com.auth.authserver2.exceptions.MemberDoesNotExistException;
 import com.auth.authserver2.exceptions.UnexpectedConfirmationTokenUpdateException;
 import com.auth.authserver2.messages.ResponseMessage;
-import com.auth.authserver2.repositories.ConfirmationTokenRepository;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.auth.authserver2.repositories.MemberRoleMapRepository;
 import com.auth.authserver2.repositories.RolesRepository;

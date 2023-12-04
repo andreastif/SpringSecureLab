@@ -3,7 +3,6 @@ package com.auth.authserver2.services.impl;
 
 import com.auth.authserver2.domains.member.MemberEntity;
 import com.auth.authserver2.domains.tokens.ConfirmationTokenEntity;
-import com.auth.authserver2.exceptions.ConfirmationTokenDoesNotExistException;
 import com.auth.authserver2.exceptions.UnexpectedConfirmationTokenUpdateException;
 import com.auth.authserver2.repositories.ConfirmationTokenRepository;
 import com.auth.authserver2.repositories.MemberRepository;

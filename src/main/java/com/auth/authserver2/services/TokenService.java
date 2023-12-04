@@ -4,7 +4,6 @@ import com.auth.authserver2.domains.member.MemberEntity;
 import com.auth.authserver2.domains.tokens.ConfirmationTokenEntity;
 import org.springframework.security.core.Authentication;
 
-import java.time.Instant;
 import java.util.Optional;
 
 public interface TokenService {

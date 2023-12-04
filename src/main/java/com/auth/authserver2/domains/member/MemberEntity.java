@@ -2,12 +2,10 @@ package com.auth.authserver2.domains.member;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-
 
 import java.time.Instant;
 import java.util.Set;

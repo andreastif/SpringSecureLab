@@ -2,7 +2,6 @@ package com.auth.authserver2.services.impl;
 
 
 import com.auth.authserver2.services.EmailSenderService;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.simplejavamail.api.email.Email;
 import org.simplejavamail.email.EmailBuilder;

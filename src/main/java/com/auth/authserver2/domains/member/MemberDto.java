@@ -3,7 +3,6 @@ package com.auth.authserver2.domains.member;
 
 import com.auth.authserver2.domains.roles.Role;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.Email;
 import lombok.*;
 
 import java.util.Set;
