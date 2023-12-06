@@ -54,7 +54,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(12);
     }
 
-    //this AuthenticationManager is for minting tokens if the user hits the login endpoint and has no token
+    //this AuthenticationManager is for finding and processing users when a user tries to log in
     @Bean
     public AuthenticationManager authenticationManager(UserDetailsService uds) {
         DaoAuthenticationProvider daoProvider = new DaoAuthenticationProvider();

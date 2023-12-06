@@ -24,8 +24,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Service("tokenService")
 @Slf4j
+@Service("tokenService")
 public class TokenServiceImpl implements TokenService {
 
     private JwtEncoder jwtEncoder;

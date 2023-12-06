@@ -65,14 +65,11 @@ public class MemberUtil {
                         } else {
                             field.set(memberEntity, ((String) value).toLowerCase());
                         }
-
                     } else if ((field.getType().equals(boolean.class) || field.getType().equals(Boolean.class))
                             && value instanceof Boolean) {
                         field.setBoolean(memberEntity, (Boolean) value);
                     }
-
                     field.setAccessible(false); // Restore the original accessibility state
-
                 } catch (NoSuchFieldException | IllegalAccessException e) {
                     throw new RuntimeException("Error updating field: " + key, e);
                 }
