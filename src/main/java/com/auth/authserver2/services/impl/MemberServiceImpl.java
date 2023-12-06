@@ -14,10 +14,12 @@ import com.auth.authserver2.services.EmailSenderService;
 import com.auth.authserver2.services.MemberService;
 import com.auth.authserver2.services.TokenService;
 import com.auth.authserver2.utils.MemberUtil;
+import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -61,15 +63,15 @@ public class MemberServiceImpl implements MemberService {
 
     //todo: change from string to a response that contains isSuccessful, msg and the token
     //todo: The architecture used from UnkownKoder is this https://docs.spring.io/spring-security/reference/servlet/authentication/architecture.html
-    public String loginUser(String username, String password) {
+    public Cookie loginUser(String username, String password) {
         try {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password)
             );
-            return tokenService.generateJwt(auth);
+            return tokenService.convertJwtToCookie(tokenService.generateJwt(auth));
         } catch (AuthenticationException exception) {
             log.info("Failed to authenticate: {}", exception.getMessage());
-            return "Failed to authenticate: " + exception.getMessage();
+            throw new AuthenticationServiceException("Failed to authenticate");
         }
     }
 

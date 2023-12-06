@@ -7,17 +7,20 @@ import com.auth.authserver2.exceptions.UnexpectedConfirmationTokenUpdateExceptio
 import com.auth.authserver2.repositories.ConfirmationTokenRepository;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.auth.authserver2.services.TokenService;
+import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +31,11 @@ import java.util.stream.Collectors;
 @Service("tokenService")
 public class TokenServiceImpl implements TokenService {
 
+
+
     private JwtEncoder jwtEncoder;
+
+    private JwtDecoder jwtDecoder;
 
     private MemberRepository memberRepository;
 
@@ -36,8 +43,9 @@ public class TokenServiceImpl implements TokenService {
 
 
     @Autowired
-    public TokenServiceImpl(JwtEncoder jwtEncoder, MemberRepository memberRepository, ConfirmationTokenRepository confirmationTokenRepository) {
+    public TokenServiceImpl(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder, MemberRepository memberRepository, ConfirmationTokenRepository confirmationTokenRepository) {
         this.jwtEncoder = jwtEncoder;
+        this.jwtDecoder = jwtDecoder;
         this.memberRepository = memberRepository;
         this.confirmationTokenRepository = confirmationTokenRepository;
     }
@@ -56,7 +64,7 @@ public class TokenServiceImpl implements TokenService {
                 .id(UUID.randomUUID().toString()) //jti or id
                 .issuer("http://localhost:8080") //who issued
                 .issuedAt(now) //when it was issued
-                .expiresAt(now.plusSeconds(1800)) //when it expires (30 min form issuing)
+                .expiresAt(now.plusSeconds(1800)) //when it expires (30 min from issuing)
                 .audience(List.of("http://localhost:8080")) //who it is intended for
                 .subject(auth.getName()) //who it concerns
                 .claim("roles", scope) //roles
@@ -106,6 +114,27 @@ public class TokenServiceImpl implements TokenService {
     public MemberEntity findMemberEntityByToken(String token) {
         var foundToken = confirmationTokenRepository.findConfirmationTokenEntityByToken(token);
         return foundToken.map(ConfirmationTokenEntity::getMemberEntity).orElse(null);
+    }
+
+    @Override
+    public Cookie convertJwtToCookie(String jwt) {
+        Cookie jwtCookie = new Cookie("JWT_COOKIE", jwt);
+
+        Instant expiry = Instant.parse(jwtDecoder.decode(jwt).getClaimAsString("exp"));
+        Instant now = Instant.now();
+        Duration betweenValue = Duration.between(now, expiry);
+
+
+        jwtCookie.setHttpOnly(true); //putting the JWT inside a cookie and making it unreadable for javascript
+
+//        jwtCookie.setSecure(true); // USE THIS WHEN SWITCHING OVER TO HTTPS, CRUCIAL
+
+        //Sets the scope of the cookie, ie for what endpoints the cookie will be automatically sent to, by the browser.
+        //For example, if you set the path of a cookie to /app, the cookie will be included in requests to /app and its sub-paths (like /app/user)
+        // but not to other paths outside of /app.
+        jwtCookie.setPath("/api/v1");
+        jwtCookie.setMaxAge((int) betweenValue.getSeconds()); //the browser will automatically decrement the variable in frontend
+        return jwtCookie;
     }
 
     //unfortunately, we must define this here, otherwise we get circular references between tokenServ, memberServ and memberContrl.

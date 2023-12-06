@@ -1,5 +1,6 @@
 package com.auth.authserver2.configs;
 
+import com.auth.authserver2.filters.ExtractAuthenticationFilter;
 import com.auth.authserver2.utils.RSAKeyProperties;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -26,6 +27,9 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.AuthenticationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -81,6 +85,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/.well-known/jwks.json").permitAll()
                         .anyRequest().authenticated()
                 ); // authorization
+
+        //adding my custom filter that extracts the JWT from the cookie and provide it to the authenticationfilter
+        http.addFilterBefore(new ExtractAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+
         http.cors(corsConfig -> corsConfigurationSource());
 
                 //read up on when CSRF is needed, here https://www.baeldung.com/csrf-stateless-rest-api

@@ -4,6 +4,7 @@ import com.auth.authserver2.domains.member.MemberDto;
 import com.auth.authserver2.domains.member.MemberUpdateDto;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.services.MemberService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,6 +23,8 @@ import java.util.Optional;
 public class MemberController {
 
     //todo: Crud + method level security (https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html)
+    //todo: Create ACTUAL refresh token OR issue new JWT when one hits Refresh Token Endpoint with old token BEFORE expiry (if expired - have to log in again)
+    //todo: add chatgpt conversation regarding httponly cookies etc.
 
     @Qualifier("memberService")
     private final MemberService memberService;
@@ -55,10 +58,25 @@ public class MemberController {
         }
     }
 
+    /*
+    The HttpServletResponse object represents the response to a request and is used to interact with HTTP response data, including headers, status codes, and cookies.
+    The HttpServletResponse is something Spring will automatically provide when the method is invoked.
+    You use this response object to add the cookie by calling response.addCookie(jwtCookie);.
+    The loginUser method in the MemberService is assumed to return a Cookie object that is already configured with the JWT.
+
+    Spring MVC operates on top of the Servlet API. Every HTTP request coming to your server is initially a HttpServletRequest, and every HTTP response is a HttpServletResponse.
+    When you define a controller method with HttpServletResponse as a parameter, Spring injects the actual response object that corresponds to the incoming request into your method.
+    Any changes you make to this HttpServletResponse object directly affect the HTTP response that will be sent back to the client.
+
+    Method Parameter Injection: Injecting HttpServletResponse as a method parameter is the standard approach.
+    It’s stateless and ensures that you're working with the correct response object associated with the current request.
+    It's only available to the controller method that declares it, which is usually what you want.
+     */
     @PostMapping("members/login")
-    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password, HttpServletResponse response) {
         log.info("Accessing api/v1/members/login login @PostMapping");
-        return new ResponseEntity<>(memberService.loginUser(username, password), HttpStatus.OK);
+        response.addCookie(memberService.loginUser(username, password));
+        return ResponseEntity.ok("Login Successful");
     }
 
     @GetMapping("members/confirm")
