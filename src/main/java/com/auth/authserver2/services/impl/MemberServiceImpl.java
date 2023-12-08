@@ -61,8 +61,6 @@ public class MemberServiceImpl implements MemberService {
         this.emailSenderService = emailSenderService;
     }
 
-    //todo: change from string to a response that contains isSuccessful, msg and the token
-    //todo: The architecture used from UnkownKoder is this https://docs.spring.io/spring-security/reference/servlet/authentication/architecture.html
     public Cookie loginUser(String username, String password) {
         try {
             Authentication auth = authenticationManager.authenticate(
@@ -161,7 +159,7 @@ public class MemberServiceImpl implements MemberService {
 
         var existingMember = memberRepository.findMemberEntityById(Long.valueOf(member.getId()));
 
-        //todo: fix the validateMember in memberUtil also, make it throw custom exceptions (not the predefined ones in use atm).
+
         if (existingMember.isPresent()) {
             var validation = MemberUtil.validateMemberDto(member);
             if (validation.isSuccessful()) {

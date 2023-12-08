@@ -102,7 +102,7 @@ public class MemberUtil {
                     if (stringValue == null) {
                         return; //skips validation for null values, which is ok
                     }
-                    if (key.equals("username") && !stringValue.toLowerCase().matches("^[^\\s]{2,45}$")) { //todo: remove toLowerCase for usernames or not?
+                    if (key.equals("username") && !stringValue.toLowerCase().matches("^[^\\s]{2,45}$")) {
                         throw new CustomUsernameValidationException("Username has to be between 2 and 45 characters");
                     }
                     if (key.equals("email") && !stringValue.toLowerCase().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
@@ -114,7 +114,6 @@ public class MemberUtil {
                     if (key.equals("firstname") || key.equals("lastname") && !stringValue.toLowerCase().matches("^[A-Za-z]{2,}$")) {
                         throw new CustomFirstNameOrLastNameValidationException("First and lastnames must be at least 2 latin characters with no special characters or digits");
                     }
-                    //todo: do not care about validating registeredToClientId for now
                 }
                 field.setAccessible(false);
             } catch (NoSuchFieldException e) {

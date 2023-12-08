@@ -22,9 +22,8 @@ import java.util.Optional;
 @EnableMethodSecurity
 public class MemberController {
 
-    //todo: Crud + method level security (https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html)
     //todo: Create ACTUAL refresh token OR issue new JWT when one hits Refresh Token Endpoint with old token BEFORE expiry (if expired - have to log in again)
-    //todo: add chatgpt conversation regarding httponly cookies etc.
+
 
     @Qualifier("memberService")
     private final MemberService memberService;
