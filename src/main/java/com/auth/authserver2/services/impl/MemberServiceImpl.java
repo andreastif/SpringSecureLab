@@ -76,10 +76,14 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public Optional<MemberDto> getMemberByEmail(String email) {
+    public MemberDto getMemberByEmail(String email) {
         Assert.hasText(email, "email cannot be empty");
         var member = memberRepository.findMemberEntityByEmail(email);
-        return member.map(memberEntity -> Optional.ofNullable(MemberUtil.toDto(memberEntity))).orElse(null);
+        if (member.isPresent()) {
+            return MemberUtil.toDto(member.get());
+        } else {
+            throw new MemberDoesNotExistException("The specified member does not exist");
+        }
     }
 
 

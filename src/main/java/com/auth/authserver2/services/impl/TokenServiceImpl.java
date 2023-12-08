@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
 @Service("tokenService")
 public class TokenServiceImpl implements TokenService {
 
-
-
     private JwtEncoder jwtEncoder;
 
     private JwtDecoder jwtDecoder;
@@ -59,7 +57,6 @@ public class TokenServiceImpl implements TokenService {
 
         String memberId = getMemberIdByUsername(auth.getName()).orElseThrow( () -> new RuntimeException("MemberId not found, check logs"));
 
-        //todo : query DB and get more claims to add, getName() is = username from userdetails
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .id(UUID.randomUUID().toString()) //jti or id
                 .issuer("http://localhost:8080") //who issued
@@ -134,6 +131,10 @@ public class TokenServiceImpl implements TokenService {
         // but not to other paths outside of /app.
         jwtCookie.setPath("/api/v1");
         jwtCookie.setMaxAge((int) betweenValue.getSeconds()); //the browser will automatically decrement the variable in frontend
+
+        //samesite attribute which protects against CSRF attacks. Sends cookie for GET but no other http method when using an email
+        // or sending as link (post/put/patch etc only works when sending from origin where cookie is first originated).
+        jwtCookie.setAttribute("SameSite", "Lax");
         return jwtCookie;
     }
 

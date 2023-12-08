@@ -9,7 +9,7 @@ import java.util.Optional;
 
 
 public interface MemberService {
-    Optional<MemberDto> getMemberByEmail(String email);
+    MemberDto getMemberByEmail(String email);
 
     ResponseMessage save(MemberDto newMember);
 

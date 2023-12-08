@@ -37,13 +37,9 @@ public class MemberController {
     @GetMapping("members")
     public ResponseEntity<?> getMemberByEmail(@RequestParam String email) {
 
-        Optional<MemberDto> member = memberService.getMemberByEmail(email);
+        var member = memberService.getMemberByEmail(email);
+        return new ResponseEntity<>(member, HttpStatus.OK);
 
-        if (member.isPresent()) {
-            return new ResponseEntity<>(member.get(), HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(new ResponseMessage(false, "Member could not be found"), HttpStatus.NOT_FOUND);
-        }
     }
 
     @PostMapping("members")
@@ -102,8 +98,6 @@ public class MemberController {
             return new ResponseEntity<>(responseMessage, HttpStatus.NOT_FOUND);
         }
     }
-
-
 
 
     @PutMapping("members")
