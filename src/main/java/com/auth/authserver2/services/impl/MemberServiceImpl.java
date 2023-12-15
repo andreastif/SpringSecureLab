@@ -1,6 +1,7 @@
 package com.auth.authserver2.services.impl;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
+import com.auth.authserver2.domains.member.MemberCheckSessionDto;
 import com.auth.authserver2.domains.member.MemberDto;
 import com.auth.authserver2.domains.member.MemberUpdateDto;
 import com.auth.authserver2.exceptions.ConfirmationTokenDoesNotExistException;
@@ -30,8 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.auth.authserver2.domains.roles.Role.*;
@@ -108,7 +109,7 @@ public class MemberServiceImpl implements MemberService {
         newMember.setAccountNonLocked(true);
         newMember.setCredentialsNonExpired(true);
         newMember.setPassword(passwordEncoder.encode(newMember.getPassword()));
-        newMember.setMemberRoles(Set.of(ROLE_USER, ROLE_GUEST, ROLE_NONE));
+        newMember.setMemberRoles(Set.of(ROLE_USER, ROLE_GUEST, ROLE_NONE, ROLE_ADMIN)); //todo: remove ROLE_ADMIN from here when admincontroller is up
 
         //1. Member
         var memberEntity = MemberUtil.toNewEntity(newMember);
@@ -201,6 +202,23 @@ public class MemberServiceImpl implements MemberService {
         } else {
             throw new ConfirmationTokenDoesNotExistException("Could not find the specified token " + token);
         }
+    }
+
+    @Override
+    public MemberCheckSessionDto checkSession() {
+        JwtAuthenticationToken auth = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        var status = MemberCheckSessionDto.builder()
+                .isAdmin(false)
+                .isLoggedIn(false)
+                .build();
+        var btw = Duration.between(Instant.now(), auth.getToken().getExpiresAt());
+        if (btw.isPositive()) {
+            status.setIsLoggedIn(true);
+        }
+        if (auth.getAuthorities().stream().anyMatch(e -> e.getAuthority().equals("ROLE_ADMIN"))) {
+            status.setIsAdmin(true);
+        }
+        return status;
     }
 
     @Override

@@ -40,7 +40,9 @@ import java.util.List;
 public class SecurityConfig {
 
     //todo: implement key rotation? (watch josh longs video) (nice to have)
-    //todo: Hookup the current Frontend application
+    //todo: add spring batch jobs that removes registrations that have not been activated within 24 hours of their registration.
+    //todo: logout should set expiry date of cookie to the past, automatically removed by browser if expiry date is up
+    //todo: add refresh endpoint for cookies/token being sent (issue new token inside new cookie if old cookie non-expired)
 
 
     private final RSAKeyProperties keyProperties;

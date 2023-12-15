@@ -1,9 +1,12 @@
 package com.auth.authserver2.controllers;
 
+import com.auth.authserver2.domains.member.MemberCheckSessionDto;
 import com.auth.authserver2.domains.member.MemberDto;
+import com.auth.authserver2.domains.member.MemberLoginDto;
 import com.auth.authserver2.domains.member.MemberUpdateDto;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.services.MemberService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -25,20 +28,20 @@ public class MemberController {
     //todo: Create ACTUAL refresh token OR issue new JWT when one hits Refresh Token Endpoint with old token BEFORE expiry (if expired - have to log in again)
 
 
+    private final JwtDecoder jwtDecoder;
     @Qualifier("memberService")
     private final MemberService memberService;
 
     @Autowired
-    public MemberController(MemberService memberService) {
+    public MemberController(MemberService memberService, JwtDecoder jwtDecoder) {
         this.memberService = memberService;
+        this.jwtDecoder = jwtDecoder;
     }
 
     @GetMapping("members")
     public ResponseEntity<?> getMemberByEmail(@RequestParam String email) {
-
         var member = memberService.getMemberByEmail(email);
         return new ResponseEntity<>(member, HttpStatus.OK);
-
     }
 
     @PostMapping("members")
@@ -68,10 +71,18 @@ public class MemberController {
     It's only available to the controller method that declares it, which is usually what you want.
      */
     @PostMapping("members/login")
-    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password, HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestBody MemberLoginDto member, HttpServletResponse response) {
         log.info("Accessing api/v1/members/login login @PostMapping");
-        response.addCookie(memberService.loginUser(username, password));
-        return ResponseEntity.ok("Login Successful");
+        Cookie cookie = memberService.loginUser(member.getUsername(), member.getPassword());
+        Jwt jwt =  jwtDecoder.decode(cookie.getValue());
+        response.addCookie(cookie);
+        return ResponseEntity.ok(jwt.getClaim("roles"));
+    }
+
+    @GetMapping("members/check-session")
+    public ResponseEntity<MemberCheckSessionDto> checkSession() {
+        var status = memberService.checkSession();
+        return new ResponseEntity<>(status, HttpStatus.OK);
     }
 
     @GetMapping("members/confirm")
