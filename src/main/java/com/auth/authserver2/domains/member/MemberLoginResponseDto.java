@@ -8,10 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 @ToString
 @Builder
-public class MemberCheckSessionDto {
-
-    private Boolean isLoggedIn;
-    private Boolean isAdmin;
+public class MemberLoginResponseDto {
+    private String roles;
     private Long expiryTimeMillis;
 
 }

@@ -1,9 +1,6 @@
 package com.auth.authserver2.controllers;
 
-import com.auth.authserver2.domains.member.MemberCheckSessionDto;
-import com.auth.authserver2.domains.member.MemberDto;
-import com.auth.authserver2.domains.member.MemberLoginDto;
-import com.auth.authserver2.domains.member.MemberUpdateDto;
+import com.auth.authserver2.domains.member.*;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.services.MemberService;
 import jakarta.servlet.http.Cookie;
@@ -15,8 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -27,15 +22,13 @@ public class MemberController {
 
     //todo: Create ACTUAL refresh token OR issue new JWT when one hits Refresh Token Endpoint with old token BEFORE expiry (if expired - have to log in again)
 
-
-    private final JwtDecoder jwtDecoder;
     @Qualifier("memberService")
     private final MemberService memberService;
 
     @Autowired
-    public MemberController(MemberService memberService, JwtDecoder jwtDecoder) {
+    public MemberController(MemberService memberService) {
         this.memberService = memberService;
-        this.jwtDecoder = jwtDecoder;
+
     }
 
     @GetMapping("members")
@@ -74,14 +67,26 @@ public class MemberController {
     public ResponseEntity<?> login(@RequestBody MemberLoginDto member, HttpServletResponse response) {
         log.info("Accessing api/v1/members/login login @PostMapping");
         Cookie cookie = memberService.loginUser(member.getUsername(), member.getPassword());
-        Jwt jwt =  jwtDecoder.decode(cookie.getValue());
-        response.addCookie(cookie);
-        return ResponseEntity.ok(jwt.getClaim("roles"));
+
+        //fetch additional info
+        MemberLoginResponseDto dtoResponse = memberService.populateMemberLoginResponseDto(cookie); //populate response body
+        response.addCookie(cookie); //add cookie to response
+
+        return ResponseEntity.ok(dtoResponse);
+    }
+
+    @GetMapping("members/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        //do i need response here? update cookie AND jwt so that expiry time is set to the past?
+        //do i do something else, without the cookie entirely? send back responsebody with logged out instead?
+        //do i do both?
+        return null;
     }
 
     @GetMapping("members/check-session")
     public ResponseEntity<MemberCheckSessionDto> checkSession() {
         var status = memberService.checkSession();
+        log.info("status in controller value: {}", status);
         return new ResponseEntity<>(status, HttpStatus.OK);
     }
 

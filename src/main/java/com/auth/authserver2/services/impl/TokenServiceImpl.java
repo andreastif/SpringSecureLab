@@ -61,7 +61,8 @@ public class TokenServiceImpl implements TokenService {
                 .id(UUID.randomUUID().toString()) //jti or id
                 .issuer("http://localhost:8080") //who issued
                 .issuedAt(now) //when it was issued
-                .expiresAt(now.plusSeconds(1800)) //when it expires (30 min from issuing)
+//                .expiresAt(now.plusSeconds(1800)) //when it expires (30 min from issuing) //todo: activate me when testing is done!
+                .expiresAt(now.plusSeconds(120)) //when it expires (30 min from issuing)
                 .audience(List.of("http://localhost:8080")) //who it is intended for
                 .subject(auth.getName()) //who it concerns
                 .claim("roles", scope) //roles
@@ -130,7 +131,8 @@ public class TokenServiceImpl implements TokenService {
         //For example, if you set the path of a cookie to /app, the cookie will be included in requests to /app and its sub-paths (like /app/user)
         // but not to other paths outside of /app.
         jwtCookie.setPath("/api/v1");
-        jwtCookie.setMaxAge((int) betweenValue.getSeconds()); //the browser will automatically decrement the variable in frontend
+//        jwtCookie.setMaxAge((int) betweenValue.getSeconds()); //the browser will automatically decrement the variable in frontend //todo: activate me!
+        jwtCookie.setMaxAge(120); //todo: replace with above after testing functionality is done
 
         //samesite attribute which protects against CSRF attacks. Sends cookie for GET but no other http method when using an email
         // or sending as link (post/put/patch etc only works when sending from origin where cookie is first originated).
