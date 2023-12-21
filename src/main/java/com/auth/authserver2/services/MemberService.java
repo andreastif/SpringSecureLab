@@ -26,4 +26,6 @@ public interface MemberService {
     MemberCheckSessionDto checkSession();
 
     MemberLoginResponseDto populateMemberLoginResponseDto(Cookie cookie);
+
+    Cookie logoutUser(Cookie[] cookies);
 }

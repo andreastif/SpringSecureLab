@@ -22,6 +22,7 @@ import org.springframework.util.Assert;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -139,6 +140,32 @@ public class TokenServiceImpl implements TokenService {
         jwtCookie.setAttribute("SameSite", "Lax");
         return jwtCookie;
     }
+
+    @Override
+    public Cookie invalidateCookie() {
+        log.info("Accessing invalidateCookie");
+        Cookie invalidatedCookie = new Cookie("JWT_COOKIE", null);
+        invalidatedCookie.setHttpOnly(true);
+        invalidatedCookie.setPath("/api/v1");
+        invalidatedCookie.setMaxAge(0);
+        invalidatedCookie.setAttribute("SameSite", "Lax");
+        return invalidatedCookie;
+    }
+
+    @Override
+    public void blacklistJwt(Cookie cookie) {
+        log.info("Accessing removeJwtFromCookie");
+        //todo: implement me
+    }
+
+    @Override
+    public Cookie extractJwtCookie(Cookie[] cookies) {
+        log.info("Accessing extractJwtCookie in tokenService");
+        var foundCookie = Arrays.stream(cookies).filter(cookie -> cookie.getName().equals("JWT_COOKIE")).toList();
+        return foundCookie.getFirst();
+    }
+
+
 
     //unfortunately, we must define this here, otherwise we get circular references between tokenServ, memberServ and memberContrl.
     public Optional<String> getMemberIdByUsername(String username) {

@@ -22,4 +22,12 @@ public interface TokenService {
     MemberEntity findMemberEntityByToken(String token);
 
     Cookie convertJwtToCookie(String jwt);
+
+    Cookie invalidateCookie();
+
+    void blacklistJwt(Cookie cookie);
+
+    Cookie extractJwtCookie(Cookie[] cookies);
+
+
 }

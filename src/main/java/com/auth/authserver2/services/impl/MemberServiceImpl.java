@@ -194,8 +194,8 @@ public class MemberServiceImpl implements MemberService {
                         tokenService.findMemberEntityByToken(token).getId());
                 if (foundMember.isPresent()) { //if member exists
                     var newConfirmationToken = tokenService.saveConfirmationToken(tokenService.createConfirmationTokenEntity(foundMember.get()));
-                        emailSenderService.sendEmailToNewUser(memberRepository.findMemberEntityById(newConfirmationToken.getMemberEntity().getId()).get().getEmail(), newConfirmationToken.getToken());
-                        return new ResponseMessage(false, "Old confirmation token had expired. Sent out a new one to the specified email " + newConfirmationToken.getMemberEntity().getEmail());
+                    emailSenderService.sendEmailToNewUser(memberRepository.findMemberEntityById(newConfirmationToken.getMemberEntity().getId()).get().getEmail(), newConfirmationToken.getToken());
+                    return new ResponseMessage(false, "Old confirmation token had expired. Sent out a new one to the specified email " + newConfirmationToken.getMemberEntity().getEmail());
                 } else {
                     throw new MemberDoesNotExistException("Member does not exist"); //this should only happen if someone randomly sends in a shitty string
                 }
@@ -236,7 +236,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public MemberLoginResponseDto populateMemberLoginResponseDto(Cookie cookie) {
         log.info("Accessing populateMemberLoginResponseDto for cookie {}", cookie.getValue());
-        Jwt jwt =  jwtDecoder.decode(cookie.getValue());
+        Jwt jwt = jwtDecoder.decode(cookie.getValue());
         String roles = jwt.getClaim("roles");
         Long expiryInEpochMilliSeconds = jwt.getExpiresAt().toEpochMilli();
         log.info("Extracting values from cookie {}", cookie);
@@ -247,6 +247,29 @@ public class MemberServiceImpl implements MemberService {
                 .build();
         log.info("Returning response object: {}", response);
         return response;
+    }
+
+    @Override
+    public Cookie logoutUser(Cookie[] cookies) {
+        log.info("Accessing logoutUser in memberService");
+        Cookie extractedJwtCookie = tokenService.extractJwtCookie(cookies);
+        tokenService.blacklistJwt(extractedJwtCookie); //todo: blacklist jwt so that if manual extraction from storage in browser has been done, cannot be used.
+        Cookie invalidatedCookie = tokenService.invalidateCookie();
+        printCookie(invalidatedCookie);
+        return invalidatedCookie;
+    }
+
+
+    private void printCookie(Cookie cookie) {
+        log.info("===Printing cookie===");
+        log.info("Cookie.getValue(): {}", cookie.getValue());
+        log.info("Cookie.getName(): {}", cookie.getName());
+        log.info("Cookie.getMaxAge(): {}", cookie.getMaxAge());
+        log.info("Cookie.getAttributes(): {}", cookie.getAttributes());
+        log.info("Cookie.getDomain(): {}", cookie.getDomain());
+        log.info("Cookie.getPath(): {}", cookie.getPath());
+        log.info("Cookie.getSecure(): {}", cookie.getSecure());
+        log.info("===End of print===");
     }
 
     @Override

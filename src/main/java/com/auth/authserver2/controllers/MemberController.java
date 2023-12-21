@@ -4,6 +4,7 @@ import com.auth.authserver2.domains.member.*;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.services.MemberService;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,11 +77,11 @@ public class MemberController {
     }
 
     @GetMapping("members/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
-        //do i need response here? update cookie AND jwt so that expiry time is set to the past?
-        //do i do something else, without the cookie entirely? send back responsebody with logged out instead?
-        //do i do both?
-        return null;
+    public ResponseEntity<?> logout(HttpServletResponse response, HttpServletRequest request) {
+        log.info("Accessing api/v1/members/logout logout @GetMapping");
+        Cookie cookie = memberService.logoutUser(request.getCookies());
+        response.addCookie(cookie);
+        return ResponseEntity.ok("You've been successfully logged out");
     }
 
     @GetMapping("members/check-session")
