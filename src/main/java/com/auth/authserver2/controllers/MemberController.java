@@ -1,9 +1,10 @@
 package com.auth.authserver2.controllers;
 
-import com.auth.authserver2.domains.member.MemberDto;
-import com.auth.authserver2.domains.member.MemberUpdateDto;
+import com.auth.authserver2.domains.member.*;
 import com.auth.authserver2.messages.ResponseMessage;
 import com.auth.authserver2.services.MemberService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,17 +15,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/")
 @EnableMethodSecurity
 public class MemberController {
 
-    //todo: Crud + method level security (https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html)
     //todo: Create ACTUAL refresh token OR issue new JWT when one hits Refresh Token Endpoint with old token BEFORE expiry (if expired - have to log in again)
-    //todo: add chatgpt conversation regarding httponly cookies etc.
 
     @Qualifier("memberService")
     private final MemberService memberService;
@@ -32,14 +29,13 @@ public class MemberController {
     @Autowired
     public MemberController(MemberService memberService) {
         this.memberService = memberService;
+
     }
 
     @GetMapping("members")
     public ResponseEntity<?> getMemberByEmail(@RequestParam String email) {
-
         var member = memberService.getMemberByEmail(email);
         return new ResponseEntity<>(member, HttpStatus.OK);
-
     }
 
     @PostMapping("members")
@@ -69,10 +65,30 @@ public class MemberController {
     It's only available to the controller method that declares it, which is usually what you want.
      */
     @PostMapping("members/login")
-    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password, HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestBody MemberLoginDto member, HttpServletResponse response) {
         log.info("Accessing api/v1/members/login login @PostMapping");
-        response.addCookie(memberService.loginUser(username, password));
-        return ResponseEntity.ok("Login Successful");
+        Cookie cookie = memberService.loginUser(member.getUsername(), member.getPassword());
+
+        //fetch additional info
+        MemberLoginResponseDto dtoResponse = memberService.populateMemberLoginResponseDto(cookie); //populate response body
+        response.addCookie(cookie); //add cookie to response
+
+        return ResponseEntity.ok(dtoResponse);
+    }
+
+    @GetMapping("members/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response, HttpServletRequest request) {
+        log.info("Accessing api/v1/members/logout logout @GetMapping");
+        Cookie cookie = memberService.logoutUser(request.getCookies());
+        response.addCookie(cookie);
+        return ResponseEntity.ok("You've been successfully logged out");
+    }
+
+    @GetMapping("members/check-session")
+    public ResponseEntity<MemberCheckSessionDto> checkSession() {
+        var status = memberService.checkSession();
+        log.info("status in controller value: {}", status);
+        return new ResponseEntity<>(status, HttpStatus.OK);
     }
 
     @GetMapping("members/confirm")

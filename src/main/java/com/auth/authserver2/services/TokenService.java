@@ -2,6 +2,7 @@ package com.auth.authserver2.services;
 
 import com.auth.authserver2.domains.member.MemberEntity;
 import com.auth.authserver2.domains.tokens.ConfirmationTokenEntity;
+import com.auth.authserver2.domains.tokens.JwtRepoEntity;
 import jakarta.servlet.http.Cookie;
 import org.springframework.security.core.Authentication;
 
@@ -22,4 +23,13 @@ public interface TokenService {
     MemberEntity findMemberEntityByToken(String token);
 
     Cookie convertJwtToCookie(String jwt);
+
+    Cookie invalidateCookie();
+
+    void blacklistJwt(Cookie cookie);
+
+    Cookie extractJwtCookie(Cookie[] cookies);
+
+    JwtRepoEntity isTokenBlacklisted(String jwt);
+
 }

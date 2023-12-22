@@ -1,7 +1,9 @@
 package com.auth.authserver2.services.impl;
 
 import com.auth.authserver2.domains.map.MemberRoleEntity;
+import com.auth.authserver2.domains.member.MemberCheckSessionDto;
 import com.auth.authserver2.domains.member.MemberDto;
+import com.auth.authserver2.domains.member.MemberLoginResponseDto;
 import com.auth.authserver2.domains.member.MemberUpdateDto;
 import com.auth.authserver2.exceptions.ConfirmationTokenDoesNotExistException;
 import com.auth.authserver2.exceptions.MemberDoesNotExistException;
@@ -25,13 +27,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.auth.authserver2.domains.roles.Role.*;
@@ -40,6 +44,7 @@ import static com.auth.authserver2.domains.roles.Role.*;
 @Service("memberService")
 public class MemberServiceImpl implements MemberService {
 
+    private final JwtDecoder jwtDecoder;
     private final MemberRepository memberRepository;
     private final MemberRoleMapRepository memberRoleMapRepository;
     private final RolesRepository rolesRepository;
@@ -51,7 +56,8 @@ public class MemberServiceImpl implements MemberService {
     private final EmailSenderService emailSenderService;
 
     @Autowired
-    public MemberServiceImpl(MemberRepository memberRepository, MemberRoleMapRepository memberRoleMapRepository, RolesRepository rolesRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokenService, EmailSenderService emailSenderService) {
+    public MemberServiceImpl(JwtDecoder jwtDecoder, MemberRepository memberRepository, MemberRoleMapRepository memberRoleMapRepository, RolesRepository rolesRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokenService, EmailSenderService emailSenderService) {
+        this.jwtDecoder = jwtDecoder;
         this.memberRepository = memberRepository;
         this.memberRoleMapRepository = memberRoleMapRepository;
         this.rolesRepository = rolesRepository;
@@ -61,9 +67,9 @@ public class MemberServiceImpl implements MemberService {
         this.emailSenderService = emailSenderService;
     }
 
-    //todo: change from string to a response that contains isSuccessful, msg and the token
-    //todo: The architecture used from UnkownKoder is this https://docs.spring.io/spring-security/reference/servlet/authentication/architecture.html
     public Cookie loginUser(String username, String password) {
+        log.info("Calling loginUser for username: {}", username);
+
         try {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password)
@@ -77,6 +83,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public MemberDto getMemberByEmail(String email) {
+        log.info("Calling getMemberByEmail for email: {}", email);
         Assert.hasText(email, "email cannot be empty");
         var member = memberRepository.findMemberEntityByEmail(email);
         if (member.isPresent()) {
@@ -90,6 +97,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public ResponseMessage save(MemberDto newMember) {
+        log.info("Calling save for new member");
         Assert.hasText(newMember.getUsername(), "username cannot be empty");
         Assert.hasText(newMember.getEmail(), "email cannot be empty");
         Assert.hasText(newMember.getPassword(), "password cannot be empty");
@@ -110,7 +118,7 @@ public class MemberServiceImpl implements MemberService {
         newMember.setAccountNonLocked(true);
         newMember.setCredentialsNonExpired(true);
         newMember.setPassword(passwordEncoder.encode(newMember.getPassword()));
-        newMember.setMemberRoles(Set.of(ROLE_USER, ROLE_GUEST, ROLE_NONE));
+        newMember.setMemberRoles(Set.of(ROLE_USER, ROLE_GUEST, ROLE_NONE, ROLE_ADMIN)); //todo: remove ROLE_ADMIN from here when admincontroller is up
 
         //1. Member
         var memberEntity = MemberUtil.toNewEntity(newMember);
@@ -134,7 +142,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public ResponseMessage deleteMemberByEmail(String email) {
-
+        log.info("Calling deleteMemberByEmail for member with email: {}", email);
         if (memberRepository.findMemberEntityByEmail(email).isPresent()) {
 
             //When deleting, you must first delete the entity where the members foreign key(s) are!
@@ -156,12 +164,10 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public ResponseMessage updateMemberCredentials(MemberUpdateDto member) {
+        log.info("Calling updateMemberCredentials for member with memberId: {}", member.getId());
 
         member.setId(extractMemberId());
-
         var existingMember = memberRepository.findMemberEntityById(Long.valueOf(member.getId()));
-
-        //todo: fix the validateMember in memberUtil also, make it throw custom exceptions (not the predefined ones in use atm).
         if (existingMember.isPresent()) {
             var validation = MemberUtil.validateMemberDto(member);
             if (validation.isSuccessful()) {
@@ -179,6 +185,8 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public ResponseMessage confirmMember(String token) {
+        log.info("Calling confirmMember with token: {}", token);
+
         var confirmationToken = tokenService.getToken(token);
         if (confirmationToken.isPresent()) {
             if (confirmationToken.get().getExpiresAt().isBefore(Instant.now())) { //if token is expired (guard-block)
@@ -186,8 +194,8 @@ public class MemberServiceImpl implements MemberService {
                         tokenService.findMemberEntityByToken(token).getId());
                 if (foundMember.isPresent()) { //if member exists
                     var newConfirmationToken = tokenService.saveConfirmationToken(tokenService.createConfirmationTokenEntity(foundMember.get()));
-                        emailSenderService.sendEmailToNewUser(memberRepository.findMemberEntityById(newConfirmationToken.getMemberEntity().getId()).get().getEmail(), newConfirmationToken.getToken());
-                        return new ResponseMessage(false, "Old confirmation token had expired. Sent out a new one to the specified email " + newConfirmationToken.getMemberEntity().getEmail());
+                    emailSenderService.sendEmailToNewUser(memberRepository.findMemberEntityById(newConfirmationToken.getMemberEntity().getId()).get().getEmail(), newConfirmationToken.getToken());
+                    return new ResponseMessage(false, "Old confirmation token had expired. Sent out a new one to the specified email " + newConfirmationToken.getMemberEntity().getEmail());
                 } else {
                     throw new MemberDoesNotExistException("Member does not exist"); //this should only happen if someone randomly sends in a shitty string
                 }
@@ -206,7 +214,67 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
+    public MemberCheckSessionDto checkSession() {
+        log.info("Calling checkSession");
+        JwtAuthenticationToken auth = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        var status = MemberCheckSessionDto.builder()
+                .isAdmin(false)
+                .isLoggedIn(false)
+                .build();
+        var btw = Duration.between(Instant.now(), auth.getToken().getExpiresAt());
+        if (btw.isPositive()) {
+            status.setIsLoggedIn(true);
+            status.setExpiryTimeMillis(auth.getToken().getExpiresAt().toEpochMilli());
+        }
+        if (auth.getAuthorities().stream().anyMatch(e -> e.getAuthority().equals("ROLE_ADMIN"))) {
+            status.setIsAdmin(true);
+        }
+        log.info("Status populated in checkSession: {}", status);
+        return status;
+    }
+
+    @Override
+    public MemberLoginResponseDto populateMemberLoginResponseDto(Cookie cookie) {
+        log.info("Accessing populateMemberLoginResponseDto for cookie {}", cookie.getValue());
+        Jwt jwt = jwtDecoder.decode(cookie.getValue());
+        String roles = jwt.getClaim("roles");
+        Long expiryInEpochMilliSeconds = jwt.getExpiresAt().toEpochMilli();
+        log.info("Extracting values from cookie {}", cookie);
+        var response = MemberLoginResponseDto
+                .builder()
+                .roles(roles)
+                .expiryTimeMillis(expiryInEpochMilliSeconds)
+                .build();
+        log.info("Returning response object: {}", response);
+        return response;
+    }
+
+    @Override
+    public Cookie logoutUser(Cookie[] cookies) {
+        log.info("Accessing logoutUser in memberService");
+        Cookie extractedJwtCookie = tokenService.extractJwtCookie(cookies);
+        tokenService.blacklistJwt(extractedJwtCookie); //todo: blacklist jwt so that if manual extraction from storage in browser has been done, cannot be used.
+        Cookie invalidatedCookie = tokenService.invalidateCookie();
+        printCookie(invalidatedCookie);
+        return invalidatedCookie;
+    }
+
+
+    private void printCookie(Cookie cookie) {
+        log.info("===Printing cookie===");
+        log.info("Cookie.getValue(): {}", cookie.getValue());
+        log.info("Cookie.getName(): {}", cookie.getName());
+        log.info("Cookie.getMaxAge(): {}", cookie.getMaxAge());
+        log.info("Cookie.getAttributes(): {}", cookie.getAttributes());
+        log.info("Cookie.getDomain(): {}", cookie.getDomain());
+        log.info("Cookie.getPath(): {}", cookie.getPath());
+        log.info("Cookie.getSecure(): {}", cookie.getSecure());
+        log.info("===End of print===");
+    }
+
+    @Override
     public String extractMemberId() {
+        log.info("Calling extractMemberId");
         JwtAuthenticationToken auth = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         return auth.getToken().getClaimAsString("memberId");
     }

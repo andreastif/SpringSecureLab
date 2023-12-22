@@ -1,5 +1,6 @@
 package com.auth.authserver2.configs;
 
+import com.auth.authserver2.filters.BlacklistedTokenFilter;
 import com.auth.authserver2.filters.ExtractAuthenticationFilter;
 import com.auth.authserver2.utils.RSAKeyProperties;
 import com.nimbusds.jose.jwk.JWK;
@@ -38,16 +39,14 @@ import java.util.List;
 
 @Configuration
 public class SecurityConfig {
-
-    //todo: implement key rotation? (watch josh longs video) (nice to have)
-    //todo: Hookup the current Frontend application
-
-
     private final RSAKeyProperties keyProperties;
 
+    private final BlacklistedTokenFilter blacklistedTokenFilter;
+
     @Autowired
-    public SecurityConfig(RSAKeyProperties keyProperties) {
+    public SecurityConfig(RSAKeyProperties keyProperties, BlacklistedTokenFilter blacklistedTokenFilter) {
         this.keyProperties = keyProperties;
+        this.blacklistedTokenFilter = blacklistedTokenFilter;
     }
 
     @Bean
@@ -80,11 +79,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/members/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/confirm").permitAll()
                         .requestMatchers(HttpMethod.GET, "/.well-known/jwks.json").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 ); // authorization
 
         //adding my custom filter that extracts the JWT from the cookie and provide it to the authenticationfilter
         http.addFilterBefore(new ExtractAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(blacklistedTokenFilter, ExtractAuthenticationFilter.class);
 
         http.cors(corsConfig -> corsConfigurationSource());
 
@@ -148,7 +149,7 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
         //the "who" that is being accepted, p.s, the moz is the RESTer mozilla extension origin
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "moz-extension://ca99f7ae-5a3d-46e7-a87d-6eda4792c909", "PostmanRuntime/7.35.0"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "moz-extension://ca99f7ae-5a3d-46e7-a87d-6eda4792c909"));
         //the "what" is being accepted, Options = pre-flight request
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
