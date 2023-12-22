@@ -96,4 +96,14 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                 .build();
         return new ResponseEntity<>(errorDetails, HttpStatus.UNAUTHORIZED);
     }
+
+    @ExceptionHandler(UnexpectedMemberNotFoundException.class)
+    public final ResponseEntity<ErrorDetails> handleUnexpectedMemberNotFoundException(Exception ex, WebRequest request) {
+        ErrorDetails errorDetails = ErrorDetails.builder()
+                .timestamp(LocalDateTime.now())
+                .message(ex.getMessage())
+                .details(request.getDescription(false))
+                .build();
+        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

@@ -32,24 +32,6 @@ public class MemberController {
 
     }
 
-    @GetMapping("members")
-    public ResponseEntity<?> getMemberByEmail(@RequestParam String email) {
-        var member = memberService.getMemberByEmail(email);
-        return new ResponseEntity<>(member, HttpStatus.OK);
-    }
-
-    @PostMapping("members")
-    public ResponseEntity<ResponseMessage> registerNewMember(@RequestBody MemberDto newMember) {
-        log.info("Accessing api/v1/members registerNewMember @PostMapping");
-        var responseMessage = memberService.save(newMember);
-
-        if (responseMessage.isSuccessful()) {
-            return new ResponseEntity<>(responseMessage, HttpStatus.CREATED);
-        } else {
-            return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
-        }
-    }
-
     /*
     The HttpServletResponse object represents the response to a request and is used to interact with HTTP response data, including headers, status codes, and cookies.
     The HttpServletResponse is something Spring will automatically provide when the method is invoked.
@@ -76,19 +58,16 @@ public class MemberController {
         return ResponseEntity.ok(dtoResponse);
     }
 
-    @GetMapping("members/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response, HttpServletRequest request) {
-        log.info("Accessing api/v1/members/logout logout @GetMapping");
-        Cookie cookie = memberService.logoutUser(request.getCookies());
-        response.addCookie(cookie);
-        return ResponseEntity.ok("You've been successfully logged out");
-    }
+    @PostMapping("members")
+    public ResponseEntity<ResponseMessage> registerNewMember(@RequestBody MemberDto newMember) {
+        log.info("Accessing api/v1/members registerNewMember @PostMapping");
+        var responseMessage = memberService.save(newMember);
 
-    @GetMapping("members/check-session")
-    public ResponseEntity<MemberCheckSessionDto> checkSession() {
-        var status = memberService.checkSession();
-        log.info("status in controller value: {}", status);
-        return new ResponseEntity<>(status, HttpStatus.OK);
+        if (responseMessage.isSuccessful()) {
+            return new ResponseEntity<>(responseMessage, HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("members/confirm")
@@ -100,6 +79,40 @@ public class MemberController {
         } else {
             return new ResponseEntity<>(response.getMsg(), HttpStatus.NOT_FOUND);
         }
+    }
+
+    @GetMapping("members/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response, HttpServletRequest request) {
+        log.info("Accessing api/v1/members/logout logout @GetMapping");
+        Cookie cookie = memberService.logoutUser(request.getCookies());
+        response.addCookie(cookie);
+        MemberLoginResponseDto dtoResponse = memberService.populateMemberLoginResponseDto(cookie); //populate response body
+        return ResponseEntity.ok(dtoResponse);
+    }
+
+    @GetMapping("members/refresh-session")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<?> refreshSession(HttpServletResponse response, HttpServletRequest request) {
+        log.info("Accessing api/v1/members/refresh-session refreshSession @GetMapping");
+        Cookie cookie = memberService.refreshSession(request.getCookies());
+        response.addCookie(cookie);
+        return ResponseEntity.ok("Session has been successfully refreshed");
+    }
+
+    @GetMapping("members/check-session")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<MemberCheckSessionDto> checkSession() {
+        log.info("Accessing api/v1/members/check-session checkSession @GetMapping");
+        var status = memberService.checkSession();
+        return new ResponseEntity<>(status, HttpStatus.OK);
+    }
+
+
+    @GetMapping("members")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> getMemberByEmail(@RequestParam String email) {
+        var member = memberService.getMemberByEmail(email);
+        return new ResponseEntity<>(member, HttpStatus.OK);
     }
 
 
@@ -119,7 +132,7 @@ public class MemberController {
     @PutMapping("members")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<ResponseMessage> updateMemberCredentials(@RequestBody MemberUpdateDto member) {
-        log.info("Accessing api/v1/members updateMemberCredentiials @PutMapping");
+        log.info("Accessing api/v1/members updateMemberCredentials @PutMapping");
         var responseMessage = memberService.updateMemberCredentials(member);
         if (responseMessage.isSuccessful()) {
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);

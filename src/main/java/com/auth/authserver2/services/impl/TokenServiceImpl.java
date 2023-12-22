@@ -54,6 +54,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     public String generateJwt(Authentication auth) {
+        log.info("Calling generateJwt in tokenService");
         Instant now = Instant.now();
 
         String scope = auth.getAuthorities().stream()
@@ -81,17 +82,19 @@ public class TokenServiceImpl implements TokenService {
     @Override
     @Transactional
     public ConfirmationTokenEntity saveConfirmationToken(ConfirmationTokenEntity confirmationToken) {
+        log.info("Calling saveConfirmationToken in tokenService");
         return confirmationTokenRepository.save(confirmationToken);
     }
 
     @Override
     public Optional<ConfirmationTokenEntity> getToken(String token) {
+        log.info("Calling getToken in tokenService");
         return confirmationTokenRepository.findConfirmationTokenEntityByToken(token);
     }
 
     @Override
     public ConfirmationTokenEntity createConfirmationTokenEntity(MemberEntity memberEntity) {
-
+        log.info("Calling createConfirmationTokenEntity in tokenService");
         return ConfirmationTokenEntity
                 .builder()
                 .token(UUID.randomUUID().toString())
@@ -103,7 +106,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public ConfirmationTokenEntity updateMemberConfirmationTokenWhenConfirmingAccount(String token) {
-        log.info("Accessing updateMemberConfirmationTokenWhenConfirmingAccount with token: {} ", token );
+        log.info("Calling updateMemberConfirmationTokenWhenConfirmingAccount with token: {} in tokenService", token );
         int update = confirmationTokenRepository.updateConfirmationTokenEntity(token, Instant.now());
         if (update > 0) {
             log.info("updateMemberConfirmationTokenWhenConfirmingAccount #{} of rows updated ", update);
@@ -115,12 +118,14 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public MemberEntity findMemberEntityByToken(String token) {
+        log.info("Calling findMemberEntityByToken in tokenService");
         var foundToken = confirmationTokenRepository.findConfirmationTokenEntityByToken(token);
         return foundToken.map(ConfirmationTokenEntity::getMemberEntity).orElse(null);
     }
 
     @Override
     public Cookie convertJwtToCookie(String jwt) {
+        log.info("Calling convertJwtToCookie in tokenService");
         Cookie jwtCookie = new Cookie("JWT_COOKIE", jwt);
 
         Instant expiry = Instant.parse(jwtDecoder.decode(jwt).getClaimAsString("exp"));
@@ -147,7 +152,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public Cookie invalidateCookie() {
-        log.info("Accessing invalidateCookie");
+        log.info("Calling invalidateCookie in tokenService");
         Cookie invalidatedCookie = new Cookie("JWT_COOKIE", null);
         invalidatedCookie.setHttpOnly(true);
         invalidatedCookie.setPath("/api/v1");
@@ -158,7 +163,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void blacklistJwt(Cookie cookie) {
-        log.info("Accessing blacklistJwt");
+        log.info("Calling blacklistJwt in tokenService");
         var expiry = jwtDecoder.decode(cookie.getValue()).getExpiresAt();
         var result = blacklistTokenRepository.save(new JwtRepoEntity(cookie.getValue(), expiry));
         log.info("Blacklisted token with values: {}", result);
@@ -166,18 +171,20 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public Cookie extractJwtCookie(Cookie[] cookies) {
-        log.info("Accessing extractJwtCookie in tokenService");
+        log.info("Calling extractJwtCookie in tokenService");
         var foundCookie = Arrays.stream(cookies).filter(cookie -> cookie.getName().equals("JWT_COOKIE")).toList();
         return foundCookie.getFirst();
     }
 
     @Override
     public JwtRepoEntity isTokenBlacklisted(String jwt) {
+        log.info("Calling isTokenBlacklisted in tokenService");
         return blacklistTokenRepository.findById(jwt).orElse(null);
     }
 
     //unfortunately, we must define this here, otherwise we get circular references between tokenServ, memberServ and memberContrl.
     public Optional<String> getMemberIdByUsername(String username) {
+        log.info("Calling getMemberIdByUsername in tokenService");
         Assert.hasText(username, "email cannot be empty");
         var member = memberRepository.findMemberEntityByUsername(username);
         return member.map(memberEntity -> Optional.ofNullable(String.valueOf(memberEntity.getId()))).orElse(null);
