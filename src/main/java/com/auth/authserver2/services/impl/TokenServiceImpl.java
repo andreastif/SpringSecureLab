@@ -3,7 +3,9 @@ package com.auth.authserver2.services.impl;
 
 import com.auth.authserver2.domains.member.MemberEntity;
 import com.auth.authserver2.domains.tokens.ConfirmationTokenEntity;
+import com.auth.authserver2.domains.tokens.JwtRepoEntity;
 import com.auth.authserver2.exceptions.UnexpectedConfirmationTokenUpdateException;
+import com.auth.authserver2.repositories.BlacklistTokenRepository;
 import com.auth.authserver2.repositories.ConfirmationTokenRepository;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.auth.authserver2.services.TokenService;
@@ -32,21 +34,23 @@ import java.util.stream.Collectors;
 @Service("tokenService")
 public class TokenServiceImpl implements TokenService {
 
-    private JwtEncoder jwtEncoder;
+    private final JwtEncoder jwtEncoder;
 
-    private JwtDecoder jwtDecoder;
+    private final JwtDecoder jwtDecoder;
 
-    private MemberRepository memberRepository;
+    private final MemberRepository memberRepository;
 
-    private ConfirmationTokenRepository confirmationTokenRepository;
+    private final ConfirmationTokenRepository confirmationTokenRepository;
 
+    private final BlacklistTokenRepository blacklistTokenRepository;
 
     @Autowired
-    public TokenServiceImpl(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder, MemberRepository memberRepository, ConfirmationTokenRepository confirmationTokenRepository) {
+    public TokenServiceImpl(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder, MemberRepository memberRepository, ConfirmationTokenRepository confirmationTokenRepository, BlacklistTokenRepository blacklistTokenRepository) {
         this.jwtEncoder = jwtEncoder;
         this.jwtDecoder = jwtDecoder;
         this.memberRepository = memberRepository;
         this.confirmationTokenRepository = confirmationTokenRepository;
+        this.blacklistTokenRepository = blacklistTokenRepository;
     }
 
     public String generateJwt(Authentication auth) {
@@ -63,7 +67,7 @@ public class TokenServiceImpl implements TokenService {
                 .issuer("http://localhost:8080") //who issued
                 .issuedAt(now) //when it was issued
 //                .expiresAt(now.plusSeconds(1800)) //when it expires (30 min from issuing) //todo: activate me when testing is done!
-                .expiresAt(now.plusSeconds(120)) //when it expires (30 min from issuing)
+                .expiresAt(now.plusSeconds(240)) //when it expires (30 min from issuing)
                 .audience(List.of("http://localhost:8080")) //who it is intended for
                 .subject(auth.getName()) //who it concerns
                 .claim("roles", scope) //roles
@@ -133,7 +137,7 @@ public class TokenServiceImpl implements TokenService {
         // but not to other paths outside of /app.
         jwtCookie.setPath("/api/v1");
 //        jwtCookie.setMaxAge((int) betweenValue.getSeconds()); //the browser will automatically decrement the variable in frontend //todo: activate me!
-        jwtCookie.setMaxAge(120); //todo: replace with above after testing functionality is done
+        jwtCookie.setMaxAge(240); //todo: replace with above after testing functionality is done
 
         //samesite attribute which protects against CSRF attacks. Sends cookie for GET but no other http method when using an email
         // or sending as link (post/put/patch etc only works when sending from origin where cookie is first originated).
@@ -154,8 +158,10 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void blacklistJwt(Cookie cookie) {
-        log.info("Accessing removeJwtFromCookie");
-        //todo: implement me
+        log.info("Accessing blacklistJwt");
+        var expiry = jwtDecoder.decode(cookie.getValue()).getExpiresAt();
+        var result = blacklistTokenRepository.save(new JwtRepoEntity(cookie.getValue(), expiry));
+        log.info("Blacklisted token with values: {}", result);
     }
 
     @Override
@@ -165,7 +171,10 @@ public class TokenServiceImpl implements TokenService {
         return foundCookie.getFirst();
     }
 
-
+    @Override
+    public JwtRepoEntity isTokenBlacklisted(String jwt) {
+        return blacklistTokenRepository.findById(jwt).orElse(null);
+    }
 
     //unfortunately, we must define this here, otherwise we get circular references between tokenServ, memberServ and memberContrl.
     public Optional<String> getMemberIdByUsername(String username) {
