@@ -1,0 +1,5 @@
+CREATE TABLE jwts (
+    jwt TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (jwt)
+)
