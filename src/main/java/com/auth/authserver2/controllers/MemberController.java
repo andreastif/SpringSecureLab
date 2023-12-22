@@ -96,7 +96,9 @@ public class MemberController {
         log.info("Accessing api/v1/members/refresh-session refreshSession @GetMapping");
         Cookie cookie = memberService.refreshSession(request.getCookies());
         response.addCookie(cookie);
-        return ResponseEntity.ok("Session has been successfully refreshed");
+        //fetch additional info
+        MemberLoginResponseDto dtoResponse = memberService.populateMemberLoginResponseDto(cookie); //populate response body
+        return ResponseEntity.ok(dtoResponse);
     }
 
     @GetMapping("members/check-session")
