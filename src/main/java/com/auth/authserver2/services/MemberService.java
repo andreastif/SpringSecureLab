@@ -28,4 +28,6 @@ public interface MemberService {
     MemberLoginResponseDto populateMemberLoginResponseDto(Cookie cookie);
 
     Cookie logoutUser(Cookie[] cookies);
+
+    Cookie refreshSession(Cookie[] cookies);
 }
