@@ -131,9 +131,14 @@ public class SecurityConfig {
     //this has nothing to do with OAuthResource server, here we are simulating a Authorization Server that mints tokens.
     @Bean
     public JwtEncoder jwtEncoder() {
+
         JWK jwk = new RSAKey
-                .Builder(keyProperties.getPublicKey()).privateKey(keyProperties.getPrivateKey()).build();
+                .Builder(keyProperties.getPublicKey())
+                .privateKey(keyProperties.getPrivateKey())
+                .build();
+
         JWKSource<SecurityContext> jwkSet = new ImmutableJWKSet<>(new JWKSet(jwk));
+
         return new NimbusJwtEncoder(jwkSet);
     }
 
