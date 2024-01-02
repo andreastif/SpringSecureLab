@@ -131,7 +131,6 @@ public class TokenServiceImpl implements TokenService {
     public Cookie convertJwtToCookie(String jwt) {
         log.info("Calling convertJwtToCookie in tokenService");
 
-        //todo: encrypt and decrypt of JWT here before passing into cookie
         log.info("RAW JWT: " + jwt);
         String encryptedJwt = cryptoUtility.encrypt(jwt);
         log.info("ENCRYPTED JWT: " + encryptedJwt);
