@@ -9,7 +9,7 @@ import com.auth.authserver2.repositories.BlacklistTokenRepository;
 import com.auth.authserver2.repositories.ConfirmationTokenRepository;
 import com.auth.authserver2.repositories.MemberRepository;
 import com.auth.authserver2.services.TokenService;
-import com.nimbusds.jose.JWSHeader;
+import com.auth.authserver2.utils.CryptoUtility;
 import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,13 +40,16 @@ public class TokenServiceImpl implements TokenService {
 
     private final BlacklistTokenRepository blacklistTokenRepository;
 
+    private final CryptoUtility cryptoUtility;
+
     @Autowired
-    public TokenServiceImpl(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder, MemberRepository memberRepository, ConfirmationTokenRepository confirmationTokenRepository, BlacklistTokenRepository blacklistTokenRepository) {
+    public TokenServiceImpl(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder, MemberRepository memberRepository, ConfirmationTokenRepository confirmationTokenRepository, BlacklistTokenRepository blacklistTokenRepository, CryptoUtility cryptoUtility) {
         this.jwtEncoder = jwtEncoder;
         this.jwtDecoder = jwtDecoder;
         this.memberRepository = memberRepository;
         this.confirmationTokenRepository = confirmationTokenRepository;
         this.blacklistTokenRepository = blacklistTokenRepository;
+        this.cryptoUtility = cryptoUtility;
     }
 
     public String generateJwt(Authentication auth) {
@@ -63,8 +66,8 @@ public class TokenServiceImpl implements TokenService {
                 .id(UUID.randomUUID().toString()) //jti or id
                 .issuer("http://localhost:8080") //who issued
                 .issuedAt(now) //when it was issued
-//                .expiresAt(now.plusSeconds(1800)) //when it expires (30 min from issuing) //todo: activate me when testing is done!
-                .expiresAt(now.plusSeconds(240)) //when it expires (30 min from issuing)
+                .expiresAt(now.plusSeconds(1800)) //when it expires (30 min from issuing)
+//                .expiresAt(now.plusSeconds(240)) //when it expires (5 min from issuing) //todo: only for testing
                 .audience(List.of("http://localhost:8080")) //who it is intended for
                 .subject(auth.getName()) //who it concerns
                 .claim("roles", scope) //roles
@@ -127,11 +130,22 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public Cookie convertJwtToCookie(String jwt) {
         log.info("Calling convertJwtToCookie in tokenService");
-        Cookie jwtCookie = new Cookie("JWT_COOKIE", jwt);
 
-        Instant expiry = Instant.parse(jwtDecoder.decode(jwt).getClaimAsString("exp"));
+        //todo: encrypt and decrypt of JWT here before passing into cookie
+        log.info("RAW JWT: " + jwt);
+        String encryptedJwt = cryptoUtility.encrypt(jwt);
+        log.info("ENCRYPTED JWT: " + encryptedJwt);
+        String decryptedJwt = cryptoUtility.decrypt(encryptedJwt);
+        log.info("DECRYPTED JWT: " + decryptedJwt);
+
+
+        Cookie jwtCookie = new Cookie("JWT_COOKIE", encryptedJwt);
+
+        //the reason for using the decrypted JWT is to ensure consistent behavior -> same single source of truth
+        Instant expiry = Instant.parse(jwtDecoder.decode(decryptedJwt).getClaimAsString("exp"));
         Instant now = Instant.now();
         Duration betweenValue = Duration.between(now, expiry);
+
 
 
         jwtCookie.setHttpOnly(true); //putting the JWT inside a cookie and making it unreadable for javascript
@@ -142,8 +156,8 @@ public class TokenServiceImpl implements TokenService {
         //For example, if you set the path of a cookie to /app, the cookie will be included in requests to /app and its sub-paths (like /app/user)
         // but not to other paths outside of /app.
         jwtCookie.setPath("/api/v1");
-//        jwtCookie.setMaxAge((int) betweenValue.getSeconds()); //the browser will automatically decrement the variable in frontend //todo: activate me!
-        jwtCookie.setMaxAge(240); //todo: replace with above after testing functionality is done
+        jwtCookie.setMaxAge((int) betweenValue.getSeconds()); //the browser will automatically decrement the variable in frontend
+//        jwtCookie.setMaxAge(240); //todo: only for testing
 
         //samesite attribute which protects against CSRF attacks. Sends cookie for GET but no other http method when using an email
         // or sending as link (post/put/patch etc only works when sending from origin where cookie is first originated).

@@ -21,15 +21,12 @@ import org.springframework.web.bind.annotation.*;
 @EnableMethodSecurity
 public class MemberController {
 
-    //todo: Create ACTUAL refresh token OR issue new JWT when one hits Refresh Token Endpoint with old token BEFORE expiry (if expired - have to log in again)
-
     @Qualifier("memberService")
     private final MemberService memberService;
 
     @Autowired
     public MemberController(MemberService memberService) {
         this.memberService = memberService;
-
     }
 
     /*
