@@ -16,6 +16,7 @@ import com.auth.authserver2.repositories.RolesRepository;
 import com.auth.authserver2.services.EmailSenderService;
 import com.auth.authserver2.services.MemberService;
 import com.auth.authserver2.services.TokenService;
+import com.auth.authserver2.utils.CryptoUtility;
 import com.auth.authserver2.utils.MemberUtil;
 import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,6 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -40,7 +40,6 @@ import org.springframework.util.Assert;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Set;
 
 import static com.auth.authserver2.domains.roles.Role.*;
@@ -55,6 +54,8 @@ public class MemberServiceImpl implements MemberService {
     private final RolesRepository rolesRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+
+    private final CryptoUtility cryptoUtility;
     @Qualifier("tokenService")
     private final TokenService tokenService;
     @Qualifier("emailSenderService")
@@ -63,13 +64,14 @@ public class MemberServiceImpl implements MemberService {
     private final UserDetailsService userDetailsService;
 
     @Autowired
-    public MemberServiceImpl(JwtDecoder jwtDecoder, MemberRepository memberRepository, MemberRoleMapRepository memberRoleMapRepository, RolesRepository rolesRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokenService, EmailSenderService emailSenderService, UserDetailsService userDetailsService) {
+    public MemberServiceImpl(JwtDecoder jwtDecoder, MemberRepository memberRepository, MemberRoleMapRepository memberRoleMapRepository, RolesRepository rolesRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, CryptoUtility cryptoUtility, TokenService tokenService, EmailSenderService emailSenderService, UserDetailsService userDetailsService) {
         this.jwtDecoder = jwtDecoder;
         this.memberRepository = memberRepository;
         this.memberRoleMapRepository = memberRoleMapRepository;
         this.rolesRepository = rolesRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
+        this.cryptoUtility = cryptoUtility;
         this.tokenService = tokenService;
         this.emailSenderService = emailSenderService;
         this.userDetailsService = userDetailsService;
@@ -245,7 +247,8 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public MemberLoginResponseDto populateMemberLoginResponseDto(Cookie cookie) {
         log.info("Calling populateMemberLoginResponseDto with in memberService");
-        Jwt jwt = jwtDecoder.decode(cookie.getValue());
+        String decryptedJwt = cryptoUtility.decrypt(cookie.getValue());
+        Jwt jwt = jwtDecoder.decode(decryptedJwt);
         String roles = jwt.getClaim("roles");
         Long expiryInEpochMilliSeconds = jwt.getExpiresAt().toEpochMilli();
         log.info("Extracting values from cookie in memberService");

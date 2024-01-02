@@ -1,6 +1,7 @@
 package com.auth.authserver2.configs;
 
 import com.auth.authserver2.filters.BlacklistedTokenFilter;
+import com.auth.authserver2.filters.DecryptTokenFilter;
 import com.auth.authserver2.filters.ExtractAuthenticationFilter;
 import com.auth.authserver2.utils.RSAKeyProperties;
 import com.nimbusds.jose.jwk.JWK;
@@ -43,10 +44,13 @@ public class SecurityConfig {
 
     private final BlacklistedTokenFilter blacklistedTokenFilter;
 
+    private final DecryptTokenFilter decryptTokenFilter;
+
     @Autowired
-    public SecurityConfig(RSAKeyProperties keyProperties, BlacklistedTokenFilter blacklistedTokenFilter) {
+    public SecurityConfig(RSAKeyProperties keyProperties, BlacklistedTokenFilter blacklistedTokenFilter, DecryptTokenFilter decryptTokenFilter) {
         this.keyProperties = keyProperties;
         this.blacklistedTokenFilter = blacklistedTokenFilter;
+        this.decryptTokenFilter = decryptTokenFilter;
     }
 
     @Bean
@@ -85,6 +89,7 @@ public class SecurityConfig {
 
         //adding my custom filter that extracts the JWT from the cookie and provide it to the authenticationfilter
         http.addFilterBefore(new ExtractAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(decryptTokenFilter, ExtractAuthenticationFilter.class);
         http.addFilterAfter(blacklistedTokenFilter, ExtractAuthenticationFilter.class);
 
         http.cors(corsConfig -> corsConfigurationSource());
