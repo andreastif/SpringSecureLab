@@ -4,12 +4,12 @@
 
 This project is designed as an educational journey into the world of web application security, with a specific focus on Spring Boot applications. 
 The primary goal is to deepen understanding and practical skills in implementing various security concepts and measures; JWTs (JSON Web Tokens), Spring Security, filter chains, key management, encryption and decryption, HttpOnly cookies, and other related security concepts.
-The application has a SPA built in react which can be found **here**. 
+The application has a SPA built in react which can be found **to-be-published**. 
 
 The project also makes use of Flyway, Postgresql, Docker etc.
 
 
-## Key Concepts Explored
+## Some Key Concepts Explored
 
 - **JWT (JSON Web Tokens):** Implementing JWT for secure and stateless authentication.
 - **Spring Security:** Leveraging Spring Security for robust security configurations.
