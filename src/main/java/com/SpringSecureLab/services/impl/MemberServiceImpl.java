@@ -18,6 +18,8 @@ import com.SpringSecureLab.domains.member.MemberCheckSessionDto;
 import com.SpringSecureLab.domains.member.MemberDto;
 import com.SpringSecureLab.domains.member.MemberUpdateDto;
 import com.SpringSecureLab.utils.CryptoUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
@@ -54,7 +58,6 @@ public class MemberServiceImpl implements MemberService {
     private final RolesRepository rolesRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-
     private final CryptoUtility cryptoUtility;
     @Qualifier("tokenService")
     private final TokenService tokenService;
@@ -225,7 +228,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public MemberCheckSessionDto checkSession() {
+    public Cookie checkSession() {
         log.info("Calling checkSession in memberService");
         JwtAuthenticationToken auth = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         var status = MemberCheckSessionDto.builder()
@@ -240,8 +243,23 @@ public class MemberServiceImpl implements MemberService {
         if (auth.getAuthorities().stream().anyMatch(e -> e.getAuthority().equals("ROLE_ADMIN"))) {
             status.setIsAdmin(true);
         }
-        log.info("Status populated in checkSession: {}", status);
-        return status;
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            String jsonStatus = objectMapper.writeValueAsString(status);
+            Cookie statusCookie = new Cookie("STATUS_COOKIE", URLEncoder.encode(jsonStatus, StandardCharsets.UTF_8));
+            statusCookie.setHttpOnly(false);
+            statusCookie.setPath("/"); //has to be / in order to access it from any path on the domain, otherwise have to be on the exact path to access it with JS/TS.
+            statusCookie.setMaxAge(300);
+            statusCookie.setAttribute("SameSite", "lax");
+            statusCookie.setSecure(false);
+
+            log.info("statusCookie populated in checkSession: {}", statusCookie);
+            return statusCookie;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error serializing status to JSON", e);
+        }
+
     }
 
     @Override

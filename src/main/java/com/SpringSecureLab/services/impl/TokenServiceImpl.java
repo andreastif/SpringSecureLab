@@ -137,7 +137,6 @@ public class TokenServiceImpl implements TokenService {
         String decryptedJwt = cryptoUtility.decrypt(encryptedJwt);
         log.info("DECRYPTED JWT: " + decryptedJwt);
 
-
         Cookie jwtCookie = new Cookie("JWT_COOKIE", encryptedJwt);
 
         //the reason for using the decrypted JWT is to ensure consistent behavior -> same single source of truth
@@ -145,10 +144,7 @@ public class TokenServiceImpl implements TokenService {
         Instant now = Instant.now();
         Duration betweenValue = Duration.between(now, expiry);
 
-
-
         jwtCookie.setHttpOnly(true); //putting the JWT inside a cookie and making it unreadable for javascript
-
 //        jwtCookie.setSecure(true); // USE THIS WHEN SWITCHING OVER TO HTTPS, CRUCIAL
 
         //Sets the scope of the cookie, ie for what endpoints the cookie will be automatically sent to, by the browser.
@@ -156,7 +152,6 @@ public class TokenServiceImpl implements TokenService {
         // but not to other paths outside of /app.
         jwtCookie.setPath("/api/v1");
         jwtCookie.setMaxAge((int) betweenValue.getSeconds()); //the browser will automatically decrement the variable in frontend
-//        jwtCookie.setMaxAge(240); //todo: only for testing
 
         //samesite attribute which protects against CSRF attacks. Sends cookie for GET but no other http method when using an email
         // or sending as link (post/put/patch etc only works when sending from origin where cookie is first originated).

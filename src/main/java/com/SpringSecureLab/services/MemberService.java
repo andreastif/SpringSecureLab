@@ -2,7 +2,6 @@ package com.SpringSecureLab.services;
 
 import com.SpringSecureLab.domains.member.MemberLoginResponseDto;
 import com.SpringSecureLab.messages.ResponseMessage;
-import com.SpringSecureLab.domains.member.MemberCheckSessionDto;
 import com.SpringSecureLab.domains.member.MemberDto;
 import com.SpringSecureLab.domains.member.MemberUpdateDto;
 import jakarta.servlet.http.Cookie;
@@ -23,7 +22,7 @@ public interface MemberService {
 
     ResponseMessage confirmMember(String token);
 
-    MemberCheckSessionDto checkSession();
+    Cookie checkSession();
 
     MemberLoginResponseDto populateMemberLoginResponseDto(Cookie cookie);
 

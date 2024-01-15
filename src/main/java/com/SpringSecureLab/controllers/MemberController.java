@@ -100,10 +100,11 @@ public class MemberController {
 
     @GetMapping("members/check-session")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResponseEntity<MemberCheckSessionDto> checkSession() {
+    public ResponseEntity<Object> checkSession(HttpServletResponse response) {
         log.info("Accessing api/v1/members/check-session checkSession @GetMapping");
-        var status = memberService.checkSession();
-        return new ResponseEntity<>(status, HttpStatus.OK);
+        Cookie status = memberService.checkSession();
+        response.addCookie(status);
+        return ResponseEntity.ok().build();
     }
 
 
